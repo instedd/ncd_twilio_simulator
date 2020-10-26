@@ -1,0 +1,13 @@
+name: twiliosim
+version: 0.1.0
+
+authors:
+  - Andrés Atencio <aatencio@manas.tech>
+
+targets:
+  twiliosim:
+    main: src/twiliosim.cr
+
+crystal: 0.35.1
+
+license: MIT
