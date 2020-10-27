@@ -1,0 +1,9 @@
+version: "3.8"
+services:
+  web:
+    image: crystallang/crystal
+    command: crystal run app/twiliosim.cr
+    ports:
+      - 80
+    volumes:
+      - ./src:/app
