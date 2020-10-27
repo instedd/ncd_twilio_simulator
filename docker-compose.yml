@@ -7,3 +7,9 @@ services:
       - 80
     volumes:
       - ./src:/app
+  ngrok:
+    image: wernight/ngrok
+    ports:
+      - 4040
+    environment:
+      NGROK_PORT: 'web:80'
