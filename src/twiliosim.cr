@@ -38,6 +38,6 @@ class Twiliosim::Server
   end
 end
 
-server = Twiliosim::Server.new("0.0.0.0", 8000)
+server = Twiliosim::Server.new("0.0.0.0", ENV.fetch("PORT", "3000").to_i)
 puts "Listening on #{server.address} ..."
 server.listen
