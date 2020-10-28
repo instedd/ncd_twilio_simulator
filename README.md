@@ -9,7 +9,7 @@ Related issue: [instedd/surveda#1793](https://github.com/instedd/surveda/issues/
 This App will be very similar to the [NCD local gateway simulator
 ](https://github.com/instedd/ncd_local_gateway_simulator), a SMS stress test tool for Surveda.
 
-So its main expected behaviour will be similar to [this one](https://www.twilio.com/docs/phone-numbers/api/incomingphonenumber-resource#fetch-an-incomingphonenumber-resource).
+So its main expected behaviour will be similar to [this one](https://github.com/instedd/ncd_local_gateway_simulator#behaviour).
 
 ## Web API
 
