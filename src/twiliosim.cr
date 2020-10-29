@@ -29,14 +29,14 @@ class Twiliosim::Server
       context.response.status_code = 200
       context.response.content_type = "application/json"
       response = {"sid" => UUID.random().to_s()}
-      context.response.puts response.to_json
+      response.to_json(context.response)
     when %r(.+/Calls.*)
       params = HTTP::Params.parse(request.body.not_nil!.gets_to_end)
       @verboice_url = params["Url"]
       context.response.status_code = 201
       context.response.content_type = "application/json"
       response = {"sid" => UUID.random().to_s()}
-      context.response.puts response.to_json
+      response.to_json(context.response)
     when %r(^/add$)
       @nums << request.query_params["num"].to_i
       context.response.status_code = 200
