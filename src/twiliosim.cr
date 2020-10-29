@@ -1,5 +1,7 @@
 require "http"
 require "json"
+require "uuid"
+require "http/params"
 
 module Twiliosim
   VERSION = "0.1.0"
@@ -16,12 +18,25 @@ class Twiliosim::Server
     @address = @server.bind_tcp host, port
 
     @nums = Array(Int32).new
+    @verboice_url = ""
   end
 
   def handle_request(context)
     request = context.request
 
     case request.path
+    when %r(.+/IncomingPhoneNumbers.+)
+      context.response.status_code = 200
+      context.response.content_type = "application/json"
+      response = {"sid" => UUID.random().to_s()}
+      response.to_json(context.response)
+    when %r(.+/Calls.*)
+      params = HTTP::Params.parse(request.body.not_nil!.gets_to_end)
+      @verboice_url = params["Url"]
+      context.response.status_code = 201
+      context.response.content_type = "application/json"
+      response = {"sid" => UUID.random().to_s()}
+      response.to_json(context.response)
     when %r(^/add$)
       @nums << request.query_params["num"].to_i
       context.response.status_code = 200
