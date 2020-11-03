@@ -30,21 +30,61 @@ class Twiliosim::Server
       response = {"sid" => UUID.random().to_s()}
       response.to_json(context.response)
     when %r(.+/Calls.*)
-      params = HTTP::Params.parse(request.body.not_nil!.gets_to_end)
+      account_sid = (/\/Accounts\/(.+)\/Calls.*/.match(request.path).try &.[1])
+      unless account_sid
+        plain_response(context, 400, "Account sid param is missing in the URL")
+        return
+      end
+      unless request.body
+        plain_response(context, 400, "Request body is missing")
+        return
+      end
+      body = request.body.not_nil!.gets_to_end
+      if body.blank?
+        plain_response(context, 400, "Request body is missing")
+        return
+      end
+      params = HTTP::Params.parse(body)
+      unless params.has_key?("Url")
+        plain_response(context, 400, "Body param 'Url' is missing")
+        return
+      end
       verboice_url = params["Url"]
+      unless params.has_key?("From")
+        plain_response(context, 400, "Body param 'From' is missing")
+        return
+      end
       from = params["From"]
+      unless params.has_key?("From")
+        plain_response(context, 400, "Body param 'To' is missing")
+        return
+      end
       to = params["To"]
-      account_sid = (/\/Accounts\/(.+)\/Calls.*/.match(request.path).try &.[1]).not_nil!
       context.response.status_code = 201
       context.response.content_type = "application/json"
       response = {"sid" => UUID.random().to_s()}
       response.to_json(context.response)
       spawn do
         sleep 1.seconds
-        HTTP::Client.post(verboice_url, body: "AccountSid=#{account_sid}&From=#{from}&To=#{to}&CallStatus=in-progress") do |response|
-          body = response.body_io.gets.not_nil!
-          verboice_url = (/<Redirect>(.*)<\/Redirect>/.match(body).try &.[1]).not_nil!
-          hangup = /<Say language="en">hangup<\/Say>/.matches?(body)
+        request_body = "AccountSid=#{account_sid}&From=#{from}&To=#{to}&CallStatus=in-progress"
+        HTTP::Client.post(verboice_url, body: request_body) do |response|
+          response_body = response.body_io.gets
+          unless response_body
+            puts "Callback failed (body response is empty) - POST #{verboice_url} #{request_body} - #{response.status_code} - #{response.status_message}"
+            next
+          end
+          response_body = response_body.not_nil!
+          if body.blank?
+            puts "Callback failed (body response is empty) - POST #{verboice_url} #{request_body} - #{response.status_code} - #{response.status_message}"
+            next
+          end
+          redirect_regex = /<Redirect>(.*)<\/Redirect>/
+          unless redirect_regex.matches?(response_body)
+            puts "Callback failed (redirect url is missing) - POST #{verboice_url} #{request_body} - #{response.status_code} - #{response.status_message}"
+            next
+          end
+          verboice_url = (redirect_regex.match(response_body).try &.[1]).not_nil!
+          hangup = /<Say language="en">hangup<\/Say>/.matches?(response_body)
           if hangup
             spawn do
               sleep 5.seconds
@@ -53,20 +93,16 @@ class Twiliosim::Server
           end
         end
       end
-    when %r(^/add$)
-      @nums << request.query_params["num"].to_i
-      context.response.status_code = 200
-      context.response.content_type = "text/plain"
-      context.response.puts "ok"
-    when %r(^/get$)
-      context.response.status_code = 200
-      @nums.to_json(context.response)
     else
-      context.response.status_code = 404
-      context.response.content_type = "text/plain"
-      context.response.puts "404 Not Found"
+      plain_response(context, 404, "404 Not Found")
     end
   end
+end
+
+private def plain_response(context, code, text)
+  context.response.status_code = code
+  context.response.content_type = "text/plain"
+  context.response.puts text
 end
 
 server = Twiliosim::Server.new("0.0.0.0", ENV.fetch("PORT", "3000").to_i)
