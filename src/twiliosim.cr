@@ -18,7 +18,6 @@ class Twiliosim::Server
     @address = @server.bind_tcp host, port
 
     @nums = Array(Int32).new
-    @verboice_url = ""
   end
 
   def handle_request(context)
@@ -32,11 +31,28 @@ class Twiliosim::Server
       response.to_json(context.response)
     when %r(.+/Calls.*)
       params = HTTP::Params.parse(request.body.not_nil!.gets_to_end)
-      @verboice_url = params["Url"]
+      verboice_url = params["Url"]
+      from = params["From"]
+      to = params["To"]
+      account_sid = (/\/Accounts\/(.+)\/Calls.*/.match(request.path).try &.[1]).not_nil!
       context.response.status_code = 201
       context.response.content_type = "application/json"
       response = {"sid" => UUID.random().to_s()}
       response.to_json(context.response)
+      spawn do
+        sleep 1.seconds
+        HTTP::Client.post(verboice_url, body: "AccountSid=#{account_sid}&From=#{from}&To=#{to}&CallStatus=in-progress") do |response|
+          body = response.body_io.gets.not_nil!
+          verboice_url = (/<Redirect>(.*)<\/Redirect>/.match(body).try &.[1]).not_nil!
+          hangup = /<Say language="en">hangup<\/Say>/.matches?(body)
+          if hangup
+            spawn do
+              sleep 5.seconds
+              HTTP::Client.post(verboice_url, body: "AccountSid=#{account_sid}&From=#{from}&To=#{to}&CallStatus=completed")
+            end
+          end
+        end
+      end
     when %r(^/add$)
       @nums << request.query_params["num"].to_i
       context.response.status_code = 200
