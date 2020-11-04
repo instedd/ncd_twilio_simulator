@@ -29,12 +29,8 @@ class Twiliosim::Server
       context.response.content_type = "application/json"
       response = {"sid" => UUID.random().to_s()}
       response.to_json(context.response)
-    when %r(.+/Calls.*)
-      account_sid = (/\/Accounts\/(.+)\/Calls.*/.match(request.path).try &.[1])
-      unless account_sid
-        plain_response(context, 400, "Account sid param is missing in the URL")
-        return
-      end
+    when %r(/Accounts/(.+)/Calls.*)
+      account_sid = $1
       unless request.body
         plain_response(context, 400, "Request body is missing")
         return
