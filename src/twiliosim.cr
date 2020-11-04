@@ -78,18 +78,22 @@ class Twiliosim::Server
             puts "Callback failed (body response is empty) - POST #{verboice_url} #{request_body} - #{response.status_code} - #{response.status_message}"
             next
           end
-          redirect_regex = /<Redirect>(.*)<\/Redirect>/
-          unless redirect_regex.matches?(response_body)
+          case response_body
+          when %r(<Redirect>(.*)<\/Redirect>)
+            redirect_url = $1
+            unless redirect_url
+              puts "Callback failed (redirect url is missing) - POST #{verboice_url} #{request_body} - #{response.status_code} - #{response.status_message}"
+              next
+            end
+            if %r(<Say language="en">hangup<\/Say>).matches?(response_body)
+              spawn do
+                sleep 5.seconds
+                HTTP::Client.post(redirect_url, body: "AccountSid=#{account_sid}&From=#{from}&To=#{to}&CallStatus=completed")
+              end
+            end
+          else
             puts "Callback failed (redirect url is missing) - POST #{verboice_url} #{request_body} - #{response.status_code} - #{response.status_message}"
             next
-          end
-          verboice_url = (redirect_regex.match(response_body).try &.[1]).not_nil!
-          hangup = /<Say language="en">hangup<\/Say>/.matches?(response_body)
-          if hangup
-            spawn do
-              sleep 5.seconds
-              HTTP::Client.post(verboice_url, body: "AccountSid=#{account_sid}&From=#{from}&To=#{to}&CallStatus=completed")
-            end
           end
         end
       end
