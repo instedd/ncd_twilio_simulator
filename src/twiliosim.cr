@@ -67,7 +67,8 @@ class Twiliosim::Server
       response.to_json(context.response)
       spawn do
         sleep 1.seconds
-        request_body = "AccountSid=#{account_sid}&From=#{from}&To=#{to}&CallStatus=in-progress"
+        request_params = {"AccountSid" => account_sid, "From" => from, "To" => to, "CallStatus" => "in-progress"}
+        request_body = HTTP::Params.encode(request_params)
         HTTP::Client.post(verboice_url, body: request_body) do |response|
           response_body = response.body_io.gets
           unless response_body
@@ -88,7 +89,9 @@ class Twiliosim::Server
             if %r(<Say language="en">hangup<\/Say>).matches?(response_body)
               spawn do
                 sleep 5.seconds
-                HTTP::Client.post(redirect_url, body: "AccountSid=#{account_sid}&From=#{from}&To=#{to}&CallStatus=completed")
+                request_params["CallStatus"] = "completed"
+                request_body = HTTP::Params.encode(request_params)
+                HTTP::Client.post(redirect_url, body: request_body)
               end
             end
           else
