@@ -31,11 +31,16 @@ class Twiliosim::Server
       response.to_json(context.response)
     when %r(/Accounts/(.+)/Calls.*)
       account_sid = $1
-      unless request.body
+      body = request.body
+      unless body
         plain_response(context, 400, "Request body is missing")
         return
       end
-      body = request.body.not_nil!.gets_to_end
+      body = body.gets_to_end
+      unless body
+        plain_response(context, 400, "Request body is missing")
+        return
+      end
       if body.blank?
         plain_response(context, 400, "Request body is missing")
         return
@@ -69,8 +74,7 @@ class Twiliosim::Server
             puts "Callback failed (body response is empty) - POST #{verboice_url} #{request_body} - #{response.status_code} - #{response.status_message}"
             next
           end
-          response_body = response_body.not_nil!
-          if body.blank?
+          if response_body.blank?
             puts "Callback failed (body response is empty) - POST #{verboice_url} #{request_body} - #{response.status_code} - #{response.status_message}"
             next
           end
