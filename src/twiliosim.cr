@@ -55,15 +55,12 @@ class Twiliosim::Server
     from = body_params["from"]
     to = body_params["to"]
     verboice_url = body_params["verboice_url"]
-
     unless from && to && verboice_url
       plain_response(context, 500, "Internal error getting the request params")
       return
     end
 
-    call = TwilioCall.new(to, from, account_sid)
-    call.start()
-    @db.save_call(call)
+    call = create_and_start_call(to, from, account_sid)
     response_call_created(context, call.id)
     spawn do
       # We give Verboice a sec to process the response. Just in case it needs it.
@@ -73,6 +70,17 @@ class Twiliosim::Server
       # It's included here just because of [this Crystal compiler known issue](https://github.com/crystal-lang/crystal/issues/3093)
       handle_created_call(verboice_url.not_nil!, call)
     end
+  end
+
+  private def create_and_start_call(to : String, from : String, @account_sid : String) : TwilioCall
+    call = @db.create_call(to, from, account_sid)
+    call.start()
+    @db.update_call(call)
+  end
+
+  private def finish_and_update_call(call : TwilioCall) : TwilioCall
+    call.finish()
+    @db.update_call(call)
   end
 
   private def get_body_params(body)
@@ -144,9 +152,8 @@ class Twiliosim::Server
 
   private def perform_response(reply_command : HangUp, call : TwilioCall) : ReplyCommand | Nil
     redirect_url = ao_message_redirect_url(reply_command.ao_message)
+    call = finish_and_update_call(call)
     reply_command = call_verboice_and_reply_message(redirect_url, call, nil)
-    call.finish()
-    @db.save_call(call)
     return unless reply_command
     perform_response(reply_command, call)
   end
