@@ -93,22 +93,14 @@ class Twiliosim::Server
   end
 
   private def get_body_params(body : IO | Nil, required_params : Array) : HTTP::Params
-    unless body
-      raise BadRequestException.new("Request body is missing")
-    end
+    raise BadRequestException.new("Request body is missing") unless body
     body = body.gets_to_end
-    unless body
-      raise BadRequestException.new("Request body is missing")
-    end
-    if body.blank?
-      raise BadRequestException.new("Request body is missing")
-    end
+    raise BadRequestException.new("Request body is missing") unless body
+    raise BadRequestException.new("Request body is missing") if body.blank?
 
     params = HTTP::Params.parse(body)
     required_params.map do |req_param|
-      unless params.has_key?(req_param)
-        raise BadRequestException.new("Required param '{#{req_param}}' is missing in body")
-      end
+      raise BadRequestException.new("Required param '{#{req_param}}' is missing in body") unless params.has_key?(req_param)
     end
     params
   end
