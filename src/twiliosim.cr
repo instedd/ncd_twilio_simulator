@@ -2,6 +2,12 @@ require "http"
 require "json"
 require "uuid"
 require "http/params"
+require "./respondent.cr"
+require "./call.cr"
+require "./ao_message.cr"
+require "./reply_command.cr"
+require "./twiliosim_db.cr"
+require "./bad_request_exception.cr"
 
 module Twiliosim
   VERSION = "0.1.0"
@@ -17,99 +23,149 @@ class Twiliosim::Server
     end
     @address = @server.bind_tcp host, port
 
-    @nums = Array(Int32).new
+    @db = TwiliosimDB.new
   end
 
-  def handle_request(context)
-    request = context.request
-
-    case request.path
+  def handle_request(context : HTTP::Server::Context)
+    case context.request.path
     when %r(.+/IncomingPhoneNumbers.+)
-      context.response.status_code = 200
-      context.response.content_type = "application/json"
-      response = {"sid" => UUID.random().to_s()}
-      response.to_json(context.response)
+      handle_incoming_phone_numbers_request(context)
     when %r(/Accounts/(.+)/Calls.*)
       account_sid = $1
-      body = request.body
-      unless body
-        plain_response(context, 400, "Request body is missing")
-        return
-      end
-      body = body.gets_to_end
-      unless body
-        plain_response(context, 400, "Request body is missing")
-        return
-      end
-      if body.blank?
-        plain_response(context, 400, "Request body is missing")
-        return
-      end
-      params = HTTP::Params.parse(body)
-      unless params.has_key?("Url")
-        plain_response(context, 400, "Body param 'Url' is missing")
-        return
-      end
-      verboice_url = params["Url"]
-      unless params.has_key?("From")
-        plain_response(context, 400, "Body param 'From' is missing")
-        return
-      end
-      from = params["From"]
-      unless params.has_key?("From")
-        plain_response(context, 400, "Body param 'To' is missing")
-        return
-      end
-      to = params["To"]
-      context.response.status_code = 201
-      context.response.content_type = "application/json"
-      response = {"sid" => UUID.random().to_s()}
-      response.to_json(context.response)
-      spawn do
-        sleep 1.seconds
-        request_params = {"AccountSid" => account_sid, "From" => from, "To" => to, "CallStatus" => "in-progress"}
-        request_body = HTTP::Params.encode(request_params)
-        HTTP::Client.post(verboice_url, body: request_body) do |response|
-          response_body = response.body_io.gets
-          unless response_body
-            puts "Callback failed (body response is empty) - POST #{verboice_url} #{request_body} - #{response.status_code} - #{response.status_message}"
-            next
-          end
-          if response_body.blank?
-            puts "Callback failed (body response is empty) - POST #{verboice_url} #{request_body} - #{response.status_code} - #{response.status_message}"
-            next
-          end
-          case response_body
-          when %r(<Redirect>(.*)<\/Redirect>)
-            redirect_url = $1
-            unless redirect_url
-              puts "Callback failed (redirect url is missing) - POST #{verboice_url} #{request_body} - #{response.status_code} - #{response.status_message}"
-              next
-            end
-            if %r(<Say language="en">hangup<\/Say>).matches?(response_body)
-              spawn do
-                sleep 5.seconds
-                request_params["CallStatus"] = "completed"
-                request_body = HTTP::Params.encode(request_params)
-                HTTP::Client.post(redirect_url, body: request_body)
-              end
-            end
-          else
-            puts "Callback failed (redirect url is missing) - POST #{verboice_url} #{request_body} - #{response.status_code} - #{response.status_message}"
-            next
-          end
-        end
-      end
+      handle_call_request(context, account_sid)
     else
-      plain_response(context, 404, "404 Not Found")
+      context.response.respond_with_status(:not_found)
     end
   end
-end
 
-private def plain_response(context, code, text)
-  context.response.status_code = code
-  context.response.content_type = "text/plain"
-  context.response.puts text
+  private def handle_incoming_phone_numbers_request(context)
+    context.response.status_code = 200
+    context.response.content_type = "application/json"
+    response = {sid: UUID.random().to_s()}
+    response.to_json(context.response)
+  end
+
+  private def handle_call_request(context : HTTP::Server::Context, account_sid : String)
+    unknown_error_message = "Internal error getting the request params"
+
+    begin
+      body_params = get_call_request_body_params(context.request.body)
+    rescue ex: BadRequestException
+      message = ex.message
+      unless message
+        puts "BadRequestException message is missing"
+        raise unknown_error_message
+      end
+        context.response.respond_with_status(:bad_request, message)
+      return
+    end
+
+    from = body_params["from"]
+    to = body_params["to"]
+    verboice_url = body_params["verboice_url"]
+
+    call = create_and_start_call(to, from, account_sid)
+    response_call_created(context, call.id)
+    spawn do
+      # We give Verboice a sec to process the response. Just in case it needs it.
+      sleep 1.seconds
+
+      # verboice_url cannot be nil, so the `not_nil!` call shouldn't be here.
+      # It's included here just because of [this Crystal compiler known issue](https://github.com/crystal-lang/crystal/issues/3093)
+      handle_created_call(verboice_url.not_nil!, call)
+    end
+  end
+
+  private def create_and_start_call(to : String, from : String, @account_sid : String) : TwilioCall
+    call = @db.create_call(to, from, account_sid)
+    call.start()
+    @db.update_call(call)
+  end
+
+  private def finish_and_update_call(call : TwilioCall) : TwilioCall
+    call.finish()
+    @db.update_call(call)
+  end
+
+  private def get_call_request_body_params(body : IO | Nil) : {to: String, from: String, verboice_url: String}
+    params = get_body_params(body, ["From", "To", "Url"])
+    {to: params["To"], from: params["From"], verboice_url: params["Url"]}
+  end
+
+  private def get_body_params(body : IO | Nil, required_params : Array) : HTTP::Params
+    raise BadRequestException.new("Request body is missing") unless body
+    body = body.gets_to_end
+    raise BadRequestException.new("Request body is missing") unless body
+    raise BadRequestException.new("Request body is missing") if body.blank?
+
+    params = HTTP::Params.parse(body)
+    required_params.map do |req_param|
+      raise BadRequestException.new("Required param '{#{req_param}}' is missing in body") unless params.has_key?(req_param)
+    end
+    params
+  end
+
+  private def response_call_created(context : HTTP::Server::Context, sid : String)
+    context.response.status_code = 201
+    context.response.content_type = "application/json"
+    response = {sid: sid}
+    response.to_json(context.response)
+  end
+
+  private def handle_created_call(verboice_url : String, call : TwilioCall) : ReplyCommand | Nil
+    reply_command = call_verboice_and_reply_message(verboice_url, call, nil)
+    return unless reply_command
+    perform_response(reply_command, call)
+  end
+
+  private def call_verboice(verboice_url, call : TwilioCall, digits : Int32 | Nil) : String | Nil
+    request_params = {"AccountSid" => call.account_sid, "From" => call.from, "To" => call.to, "CallStatus" => call.status}
+    request_params["Digits"] = digits.to_s if digits
+    request_body = HTTP::Params.encode(request_params)
+    HTTP::Client.post(verboice_url, body: request_body) do |response|
+      response_body = response.body_io.gets_to_end
+      if response_body.blank?
+        puts "Callback failed (body response is empty) - POST #{verboice_url} #{request_body} - #{response.status_code} - #{response.status_message}"
+        return
+      end
+      response_body
+    end
+  end
+
+  private def parse_ao_message(response_body : String) : TwilioAOMessage | Nil
+    if %r(<Say .+>(.+)<\/Say>.*<Redirect>(.+)<\/Redirect>).match(response_body)
+      message = $1
+      redirect_url = $2
+      TwilioAOMessage.new(message, redirect_url)
+    end
+  end
+
+  private def ao_message_redirect_url(ao_message : TwilioAOMessage)
+    ao_message.redirect_url
+  end
+
+  private def perform_response(reply_command : HangUp, call : TwilioCall) : ReplyCommand | Nil
+    redirect_url = ao_message_redirect_url(reply_command.ao_message)
+    call = finish_and_update_call(call)
+    reply_command = call_verboice_and_reply_message(redirect_url, call, nil)
+    return unless reply_command
+    perform_response(reply_command, call)
+  end
+
+  private def perform_response(reply_command : PressDigits, call : TwilioCall) : ReplyCommand | Nil
+    redirect_url = ao_message_redirect_url(reply_command.ao_message)
+    reply_command = call_verboice_and_reply_message(redirect_url, call, reply_command.digits)
+    return unless reply_command
+    perform_response(reply_command, call)
+  end
+
+  private def call_verboice_and_reply_message(redirect_url : String, call : TwilioCall, digits : Int32 | Nil) : ReplyCommand | Nil
+    response_body = call_verboice(redirect_url, call, digits)
+    return unless response_body
+    ao_message = parse_ao_message(response_body)
+    return unless ao_message
+    Respondent.reply_message(ao_message)
+  end
 end
 
 server = Twiliosim::Server.new("0.0.0.0", ENV.fetch("PORT", "3000").to_i)
