@@ -122,7 +122,7 @@ class Twiliosim::Server
 
   private def call_verboice(verboice_url, call : TwilioCall, digits : Int32 | Nil) : String | Nil
     request_params = {"AccountSid" => call.account_sid, "From" => call.from, "To" => call.to, "CallStatus" => call.status}
-    request_params["Digits"] = digits.to_s if (digits)
+    request_params["Digits"] = digits.to_s if digits
     request_body = HTTP::Params.encode(request_params)
     HTTP::Client.post(verboice_url, body: request_body) do |response|
       response_body = response.body_io.gets_to_end
