@@ -26,14 +26,9 @@ class Twiliosim::Server
   end
 
   def handle_request(context : HTTP::Server::Context)
-    request = context.request
-
-    case request.path
+    case context.request.path
     when %r(.+/IncomingPhoneNumbers.+)
-      context.response.status_code = 200
-      context.response.content_type = "application/json"
-      response = {"sid" => UUID.random().to_s()}
-      response.to_json(context.response)
+      handle_incoming_phone_numbers_request(context)
     when %r(/Accounts/(.+)/Calls.*)
       account_sid = $1
       handle_call_request(context, account_sid)
