@@ -34,7 +34,7 @@ class Twiliosim::Server
       account_sid = $1
       handle_call_request(context, account_sid)
     else
-      plain_response(context, 404, "404 Not Found")
+      context.response.respond_with_status(:not_found)
     end
   end
 
