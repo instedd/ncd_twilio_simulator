@@ -151,17 +151,15 @@ class Twiliosim::Server
 
   private def perform_response(reply_command : HangUp, call : TwilioCall) : ReplyCommand | Nil
     redirect_url = ao_message_redirect_url(reply_command.ao_message)
-    return unless redirect_url
+    reply_command = call_verboice_and_reply_message(redirect_url, call, nil)
     call.finish()
     @db.save_call(call)
-    reply_command = call_verboice_and_reply_message(redirect_url, call, nil)
     return unless reply_command
     perform_response(reply_command, call)
   end
 
   private def perform_response(reply_command : PressDigits, call : TwilioCall) : ReplyCommand | Nil
     redirect_url = ao_message_redirect_url(reply_command.ao_message)
-    return unless redirect_url
     reply_command = call_verboice_and_reply_message(redirect_url, call, reply_command.digits)
     return unless reply_command
     perform_response(reply_command, call)
