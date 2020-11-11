@@ -49,7 +49,7 @@ class Twiliosim::Server
     unknown_error_message = "Internal error getting the request params"
 
     begin
-      body_params = get_body_params(context.request.body, ["From", "To", "Url"])
+      body_params = get_call_request_body_params(context.request.body)
     rescue ex: BadRequestException
       message = ex.message
       unless message
@@ -60,14 +60,9 @@ class Twiliosim::Server
       return
     end
 
-    from = body_params["From"]
-    to = body_params["To"]
-    verboice_url = body_params["Url"]
-
-    unless from && to && verboice_url
-      puts "Required (and validated) param is missing"
-      raise unknown_error_message
-    end
+    from = body_params["from"]
+    to = body_params["to"]
+    verboice_url = body_params["verboice_url"]
 
     call = create_and_start_call(to, from, account_sid)
     response_call_created(context, call.id)
@@ -90,6 +85,11 @@ class Twiliosim::Server
   private def finish_and_update_call(call : TwilioCall) : TwilioCall
     call.finish()
     @db.update_call(call)
+  end
+
+  private def get_call_request_body_params(body : IO | Nil) : {to: String, from: String, verboice_url: String}
+    params = get_body_params(body, ["From", "To", "Url"])
+    {to: params["To"], from: params["From"], verboice_url: params["Url"]}
   end
 
   private def get_body_params(body : IO | Nil, required_params : Array) : HTTP::Params
