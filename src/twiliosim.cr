@@ -125,12 +125,9 @@ class Twiliosim::Server
     request_params["Digits"] = digits.to_s if (digits)
     request_body = HTTP::Params.encode(request_params)
     HTTP::Client.post(verboice_url, body: request_body) do |response|
-      empty_body_log = "Callback failed (body response is empty) - POST #{verboice_url} #{request_body} - #{response.status_code} - #{response.status_message}"
-      response_body = response.body_io.gets
-      unless response_body
-        return
-      end
+      response_body = response.body_io.gets_to_end
       if response_body.blank?
+        puts "Callback failed (body response is empty) - POST #{verboice_url} #{request_body} - #{response.status_code} - #{response.status_message}"
         return
       end
       response_body
