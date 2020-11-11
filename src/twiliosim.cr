@@ -103,10 +103,6 @@ class Twiliosim::Server
     { "to" => to, "from" => from, "verboice_url" => verboice_url, "error" => nil }
   end
 
-  private def start_call(to, from, account_sid)
-    @db.start_call(to, from, account_sid)
-  end
-
   private def response_call_created(context, sid)
     context.response.status_code = 201
     context.response.content_type = "application/json"
