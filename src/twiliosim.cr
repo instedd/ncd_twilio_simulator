@@ -7,6 +7,7 @@ require "./call.cr"
 require "./ao_message.cr"
 require "./reply_command.cr"
 require "./twiliosim_db.cr"
+require "./bad_request_exception.cr"
 
 module Twiliosim
   VERSION = "0.1.0"
@@ -44,20 +45,28 @@ class Twiliosim::Server
     response.to_json(context.response)
   end
 
-  private def handle_call_request(context, account_sid)
-    body_params = get_body_params(context.request.body)
+  private def handle_call_request(context : HTTP::Server::Context, account_sid : String)
+    unknown_error_message = "Internal error getting the request params"
 
-    if (body_params["error"])
-      plain_response(context, 400, body_params["error"])
+    begin
+      body_params = get_body_params(context.request.body, ["From", "To", "Url"])
+    rescue ex: BadRequestException
+      message = ex.message
+      unless message
+        puts "BadRequestException message is missing"
+        raise unknown_error_message
+      end
+        plain_response(context, 400, message)
       return
     end
 
-    from = body_params["from"]
-    to = body_params["to"]
-    verboice_url = body_params["verboice_url"]
+    from = body_params["From"]
+    to = body_params["To"]
+    verboice_url = body_params["Url"]
+
     unless from && to && verboice_url
-      plain_response(context, 500, "Internal error getting the request params")
-      return
+      puts "Required (and validated) param is missing"
+      raise unknown_error_message
     end
 
     call = create_and_start_call(to, from, account_sid)
@@ -83,35 +92,28 @@ class Twiliosim::Server
     @db.update_call(call)
   end
 
-  private def get_body_params(body)
+  private def get_body_params(body : IO | Nil, required_params : Array) : HTTP::Params
     unless body
-      return { "error" => "Request body is missing" }
+      raise BadRequestException.new("Request body is missing")
     end
     body = body.gets_to_end
     unless body
-      return { "error" => "Request body is missing" }
+      raise BadRequestException.new("Request body is missing")
     end
     if body.blank?
-      return { "error" => "Request body is missing" }
+      raise BadRequestException.new("Request body is missing")
     end
-    params = HTTP::Params.parse(body)
-    unless params.has_key?("Url")
-      return { "error" => "Body param 'Url' is missing" }
-    end
-    verboice_url = params["Url"]
-    unless params.has_key?("From")
-      return { "error" => "Body param 'From' is missing" }
-    end
-    from = params["From"]
-    unless params.has_key?("From")
-      return { "error" => "Body param 'To' is missing" }
-    end
-    to = params["To"]
 
-    { "to" => to, "from" => from, "verboice_url" => verboice_url, "error" => nil }
+    params = HTTP::Params.parse(body)
+    required_params.map do |req_param|
+      unless params.has_key?(req_param)
+        raise BadRequestException.new("Required param '{#{req_param}}' is missing in body")
+      end
+    end
+    params
   end
 
-  private def response_call_created(context, sid)
+  private def response_call_created(context : HTTP::Server::Context, sid : String)
     context.response.status_code = 201
     context.response.content_type = "application/json"
     response = {sid: sid}
@@ -173,7 +175,7 @@ class Twiliosim::Server
     Respondent.reply_message(ao_message)
   end
 
-  private def plain_response(context, code, text)
+  private def plain_response(context : HTTP::Server::Context, code : Int32, text : String)
     context.response.status_code = code
     context.response.content_type = "text/plain"
     context.response.puts text
