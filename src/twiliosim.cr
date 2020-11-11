@@ -56,7 +56,7 @@ class Twiliosim::Server
         puts "BadRequestException message is missing"
         raise unknown_error_message
       end
-        plain_response(context, 400, message)
+        context.response.respond_with_status(:bad_request, message)
       return
     end
 
