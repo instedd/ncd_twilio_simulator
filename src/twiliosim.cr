@@ -6,7 +6,7 @@ require "./respondent.cr"
 require "./call.cr"
 require "./ao_message.cr"
 require "./reply_command.cr"
-require "./db.cr"
+require "./twiliosim_db.cr"
 
 module Twiliosim
   VERSION = "0.1.0"
@@ -22,7 +22,7 @@ class Twiliosim::Server
     end
     @address = @server.bind_tcp host, port
 
-    @db = DB.new
+    @db = TwiliosimDB.new
   end
 
   def handle_request(context : HTTP::Server::Context)
