@@ -166,12 +166,6 @@ class Twiliosim::Server
     return unless ao_message
     Respondent.reply_message(ao_message)
   end
-
-  private def plain_response(context : HTTP::Server::Context, code : Int32, text : String)
-    context.response.status_code = code
-    context.response.content_type = "text/plain"
-    context.response.puts text
-  end
 end
 
 server = Twiliosim::Server.new("0.0.0.0", ENV.fetch("PORT", "3000").to_i)
