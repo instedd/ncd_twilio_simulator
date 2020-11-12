@@ -1,11 +1,13 @@
-abstract struct ReplyCommand
+require "./ao_message"
+
+abstract struct Twiliosim::ReplyCommand
   getter ao_message : AOMessage
 
   def initialize(@ao_message)
   end
 end
 
-struct PressDigits < ReplyCommand
+struct Twiliosim::PressDigits < Twiliosim::ReplyCommand
   getter digits : Int32
 
   def initialize(ao_message, @digits)
@@ -13,5 +15,5 @@ struct PressDigits < ReplyCommand
   end
 end
 
-struct HangUp < ReplyCommand
+struct Twiliosim::HangUp < Twiliosim::ReplyCommand
 end
