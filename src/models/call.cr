@@ -1,6 +1,6 @@
 require "uuid"
 
-abstract class Twiliosim::Call
+abstract struct Twiliosim::Call
   property id : String
   property to : String
   property from : String
@@ -13,7 +13,7 @@ abstract class Twiliosim::Call
   abstract def finish
 end
 
-class Twiliosim::TwilioCall < Twiliosim::Call
+struct Twiliosim::TwilioCall < Twiliosim::Call
   property account_sid : String
   property status : String
 
