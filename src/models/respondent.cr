@@ -1,5 +1,5 @@
-class Twiliosim::Respondent
-  def Respondent.reply_message(ao_message : AOMessage) : ReplyCommand | Nil
+module Twiliosim::Respondent
+  def self.reply_message(ao_message : AOMessage) : ReplyCommand | Nil
     case ao_message.message
     when "#hangup"
       HangUp.new(ao_message)

@@ -1,5 +1,5 @@
 require "http"
-require "./router"
+require "./app"
 require "./lib/bad_request_handler"
 
 module Twiliosim
@@ -8,7 +8,7 @@ end
 
 server = HTTP::Server.new([
   Twiliosim::BadRequestHandler.new,
-  Twiliosim::Router.new,
+  Twiliosim::App.new,
 ])
 
 address = server.bind_tcp "0.0.0.0", ENV.fetch("PORT", "3000").to_i
