@@ -3,7 +3,7 @@ require "../db"
 require "../lib/bad_request_exception"
 require "../models/reply_command"
 require "../models/ao_message"
-require "../models/respondent"
+require "../models/simulator"
 require "../models/verboice"
 
 module Twiliosim::CallController
@@ -67,7 +67,7 @@ module Twiliosim::CallController
       return unless response_body
       ao_message = parse_ao_message(response_body)
       return unless ao_message
-      Twiliosim::Respondent.reply_message(ao_message)
+      Twiliosim::Simulator.reply_message(ao_message)
     end
 
     def self.perform_response(reply_command : HangUp, call : TwilioCall, db : Twiliosim::DB) : ReplyCommand | Nil
