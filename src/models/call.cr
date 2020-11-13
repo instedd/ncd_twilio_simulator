@@ -1,4 +1,6 @@
-abstract class Call
+require "uuid"
+
+abstract class Twiliosim::Call
   property id : String
   property to : String
   property from : String
@@ -7,11 +9,11 @@ abstract class Call
     @id = UUID.random().to_s()
   end
 
-  abstract def start()
-  abstract def finish()
+  abstract def start
+  abstract def finish
 end
 
-class TwilioCall < Call
+class Twiliosim::TwilioCall < Twiliosim::Call
   property account_sid : String
   property status : String
 
@@ -20,11 +22,11 @@ class TwilioCall < Call
     super(to, from)
   end
 
-  def start()
+  def start
     @status = "in-progress"
   end
 
-  def finish()
+  def finish
     @status = "completed"
   end
 end

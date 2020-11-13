@@ -1,4 +1,4 @@
-class Respondent
+class Twiliosim::Respondent
   def Respondent.reply_message(ao_message : AOMessage) : ReplyCommand | Nil
     case ao_message.message
     when "#hangup"

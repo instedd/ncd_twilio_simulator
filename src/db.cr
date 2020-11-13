@@ -1,5 +1,12 @@
-class TwiliosimDB
+require "./models/call"
+
+class Twiliosim::DB
+  @@instance = Twiliosim::DB.new
   @calls = Hash(String, TwilioCall).new
+
+  def self.get_instance : Twiliosim::DB
+    @@instance
+  end
 
   def create_call(to : String, from : String, @account_sid : String) : TwilioCall
     call = TwilioCall.new(to, from, account_sid)
