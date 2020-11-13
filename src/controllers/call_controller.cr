@@ -4,6 +4,7 @@ require "../lib/bad_request_exception"
 require "../models/reply_command"
 require "../models/ao_message"
 require "../models/respondent"
+require "../models/verboice"
 
 module Twiliosim::CallController
   def self.handle_request(context : HTTP::Server::Context, account_sid : String, db : Twiliosim::DB)
@@ -27,11 +28,6 @@ module Twiliosim::CallController
   private def self.create_and_start_call(to : String, from : String, account_sid : String, db : Twiliosim::DB) : TwilioCall
     call = db.create_call(to, from, account_sid)
     call.start()
-    db.update_call(call)
-  end
-
-  private def self.finish_and_update_call(call : TwilioCall, db : Twiliosim::DB) : TwilioCall
-    call.finish()
     db.update_call(call)
   end
 
@@ -60,57 +56,50 @@ module Twiliosim::CallController
   end
 
   private def self.handle_created_call(verboice_url : String, call : TwilioCall, db : Twiliosim::DB) : ReplyCommand | Nil
-    reply_command = call_verboice_and_reply_message(verboice_url, call, nil)
+    reply_command = Orchestrator.post_and_reply(verboice_url, call, nil)
     return unless reply_command
-    perform_response(reply_command, call, db)
+    Orchestrator.perform_response(reply_command, call, db)
   end
 
-  private def self.call_verboice(verboice_url, call : TwilioCall, digits : Int32 | Nil) : String | Nil
-    request_params = {"AccountSid" => call.account_sid, "From" => call.from, "To" => call.to, "CallStatus" => call.status}
-    request_params["Digits"] = digits.to_s if digits
-    request_body = HTTP::Params.encode(request_params)
-    HTTP::Client.post(verboice_url, body: request_body) do |response|
-      response_body = response.body_io.gets_to_end
-      if response_body.blank?
-        puts "Callback failed (body response is empty) - POST #{verboice_url} #{request_body} - #{response.status_code} - #{response.status_message}"
-        return
+  module Orchestrator
+    def self.post_and_reply(redirect_url : String, call : TwilioCall, digits : Int32 | Nil) : ReplyCommand | Nil
+      response_body = Twiliosim::Verboice.post(redirect_url, call.account_sid, call.from, call.to, call.status, digits)
+      return unless response_body
+      ao_message = parse_ao_message(response_body)
+      return unless ao_message
+      Twiliosim::Respondent.reply_message(ao_message)
+    end
+
+    def self.perform_response(reply_command : HangUp, call : TwilioCall, db : Twiliosim::DB) : ReplyCommand | Nil
+      redirect_url = ao_message_redirect_url(reply_command.ao_message)
+      call = finish_and_update_call(call, db)
+      reply_command = post_and_reply(redirect_url, call, nil)
+      return unless reply_command
+      perform_response(reply_command, call, db)
+    end
+
+    def self.perform_response(reply_command : PressDigits, call : TwilioCall, db : Twiliosim::DB) : ReplyCommand | Nil
+      redirect_url = ao_message_redirect_url(reply_command.ao_message)
+      reply_command = post_and_reply(redirect_url, call, reply_command.digits)
+      return unless reply_command
+      perform_response(reply_command, call, db)
+    end
+
+    private def self.finish_and_update_call(call : TwilioCall, db : Twiliosim::DB) : TwilioCall
+      call.finish()
+      db.update_call(call)
+    end
+
+    private def self.parse_ao_message(response_body : String) : TwilioAOMessage | Nil
+      if %r(<Say .+>(.+)<\/Say>.*<Redirect>(.+)<\/Redirect>).match(response_body)
+        message = $1
+        redirect_url = $2
+        TwilioAOMessage.new(message, redirect_url)
       end
-      response_body
     end
-  end
 
-  private def self.parse_ao_message(response_body : String) : TwilioAOMessage | Nil
-    if %r(<Say .+>(.+)<\/Say>.*<Redirect>(.+)<\/Redirect>).match(response_body)
-      message = $1
-      redirect_url = $2
-      TwilioAOMessage.new(message, redirect_url)
+    private def self.ao_message_redirect_url(ao_message : TwilioAOMessage)
+      ao_message.redirect_url
     end
-  end
-
-  private def self.ao_message_redirect_url(ao_message : TwilioAOMessage)
-    ao_message.redirect_url
-  end
-
-  private def self.perform_response(reply_command : HangUp, call : TwilioCall, db : Twiliosim::DB) : ReplyCommand | Nil
-    redirect_url = ao_message_redirect_url(reply_command.ao_message)
-    call = finish_and_update_call(call, db)
-    reply_command = call_verboice_and_reply_message(redirect_url, call, nil)
-    return unless reply_command
-    perform_response(reply_command, call, db)
-  end
-
-  private def self.perform_response(reply_command : PressDigits, call : TwilioCall, db : Twiliosim::DB) : ReplyCommand | Nil
-    redirect_url = ao_message_redirect_url(reply_command.ao_message)
-    reply_command = call_verboice_and_reply_message(redirect_url, call, reply_command.digits)
-    return unless reply_command
-    perform_response(reply_command, call, db)
-  end
-
-  private def self.call_verboice_and_reply_message(redirect_url : String, call : TwilioCall, digits : Int32 | Nil) : ReplyCommand | Nil
-    response_body = call_verboice(redirect_url, call, digits)
-    return unless response_body
-    ao_message = parse_ao_message(response_body)
-    return unless ao_message
-    Twiliosim::Respondent.reply_message(ao_message)
   end
 end
