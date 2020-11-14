@@ -9,7 +9,7 @@ class NumericCommand < VerboiceCommand
 
   def self.parse(message : String) : NumericCommand | Nil
     if message =~ /#numeric:\s*(\d+)\s*-\s*(\d+)/
-      min = $~[1].to_i
+      min = $1.to_i
       max = $~[2].to_i
       NumericCommand.new min, max
     end
