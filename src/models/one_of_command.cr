@@ -1,6 +1,4 @@
-require "./verboice_command"
-
-class OneOfCommand < VerboiceCommand
+struct OneOfCommand
   property choices
 
   def initialize(@choices : Array(Int32))

@@ -1,6 +1,4 @@
-require "./verboice_command"
-
-class NumericCommand < VerboiceCommand
+struct NumericCommand
   property min
   property max
 
