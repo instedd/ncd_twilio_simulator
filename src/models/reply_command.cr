@@ -5,6 +5,10 @@ abstract struct Twiliosim::ReplyCommand
 
   def initialize(@ao_message)
   end
+
+  def to_s : String
+    ""
+  end
 end
 
 struct Twiliosim::PressDigits < Twiliosim::ReplyCommand
@@ -13,7 +17,14 @@ struct Twiliosim::PressDigits < Twiliosim::ReplyCommand
   def initialize(ao_message, @digits)
     super(ao_message)
   end
+
+  def to_s : String
+    "PressDigits < ReplyCommand #{@digits.to_s}"
+  end
 end
 
 struct Twiliosim::HangUp < Twiliosim::ReplyCommand
+  def to_s : String
+    "HangUp < ReplyCommand"
+  end
 end

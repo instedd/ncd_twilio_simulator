@@ -1,6 +1,7 @@
 require "http"
 require "./app"
 require "./lib/bad_request_handler"
+require "log"
 
 module Twiliosim
   VERSION = "0.1.0"
