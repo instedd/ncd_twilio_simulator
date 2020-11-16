@@ -4,6 +4,7 @@ class Twiliosim::BadRequestHandler
     begin
       call_next(context)
     rescue ex : BadRequestException
+      puts "Bad request - #{ex.message}"
       context.response.respond_with_status(:bad_request, ex.message)
     end
   end

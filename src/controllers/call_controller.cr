@@ -13,6 +13,8 @@ module Twiliosim::CallController
     to = body_params["to"]
     verboice_url = body_params["verboice_url"]
 
+    puts "Call request - #{context.request.path} - From: #{from} - To: #{to} - Verboice Url: #{verboice_url}"
+
     call = create_and_start_call(to, from, account_sid, db)
     response_call_created(context, call.id)
     spawn do
@@ -28,7 +30,9 @@ module Twiliosim::CallController
   private def self.create_and_start_call(to : String, from : String, account_sid : String, db : Twiliosim::DB) : TwilioCall
     call = db.create_call(to, from, account_sid)
     call.start()
-    db.update_call(call)
+    call = db.update_call(call)
+    puts "Call started - sid: #{call.id} - account_sid: #{call.account_sid} - from: #{call.from} - to: #{call.to}"
+    call
   end
 
   private def self.get_call_request_body_params(request : HTTP::Request) : {to: String, from: String, verboice_url: String}
@@ -67,7 +71,9 @@ module Twiliosim::CallController
       return unless response_body
       ao_message = parse_ao_message(response_body)
       return unless ao_message
-      Twiliosim::Simulator.reply_message(ao_message)
+      reply = Twiliosim::Simulator.reply_message(ao_message)
+      puts "Call reply - sid: #{call.id} - to: #{call.to} - Reply: #{reply.to_s} - AO message: #{ao_message.to_s}"
+      reply
     end
 
     def self.perform_response(reply_command : HangUp, call : TwilioCall, db : Twiliosim::DB) : ReplyCommand | Nil
@@ -87,7 +93,9 @@ module Twiliosim::CallController
 
     private def self.finish_and_update_call(call : TwilioCall, db : Twiliosim::DB) : TwilioCall
       call.finish()
-      db.update_call(call)
+      call = db.update_call(call)
+      puts "Call finished - sid: #{call.id} - to: #{call.to}"
+      call
     end
 
     private def self.parse_ao_message(response_body : String) : TwilioAOMessage | Nil
