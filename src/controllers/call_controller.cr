@@ -7,7 +7,7 @@ require "../models/simulator"
 require "../models/verboice"
 
 module Twiliosim::CallController
-  def self.handle_request(context : HTTP::Server::Context, account_sid : String, db : Twiliosim::DB)
+  def self.handle_request(context : HTTP::Server::Context, account_sid : String, db : Twiliosim::DB, config : Twiliosim::Config)
     body_params = get_call_request_body_params(context.request)
     from = body_params["from"]
     to = body_params["to"]
@@ -23,7 +23,7 @@ module Twiliosim::CallController
 
       # verboice_url cannot be nil, so the `not_nil!` call shouldn't be here.
       # It's included here just because of [this Crystal compiler known issue](https://github.com/crystal-lang/crystal/issues/3093)
-      handle_created_call(verboice_url.not_nil!, call, db)
+      handle_created_call(verboice_url.not_nil!, call, db, config)
     end
   end
 
@@ -59,36 +59,36 @@ module Twiliosim::CallController
     response.to_json(context.response)
   end
 
-  private def self.handle_created_call(verboice_url : String, call : TwilioCall, db : Twiliosim::DB) : ReplyCommand | Nil
-    reply_command = Orchestrator.post_and_reply(verboice_url, call, nil)
+  private def self.handle_created_call(verboice_url : String, call : TwilioCall, db : Twiliosim::DB, config : Twiliosim::Config) : ReplyCommand | Nil
+    reply_command = Orchestrator.post_and_reply(verboice_url, call, nil, config)
     return unless reply_command
-    Orchestrator.perform_response(reply_command, call, db)
+    Orchestrator.perform_response(reply_command, call, db, config)
   end
 
   module Orchestrator
-    def self.post_and_reply(redirect_url : String, call : TwilioCall, digits : Int32 | Nil) : ReplyCommand | Nil
+    def self.post_and_reply(redirect_url : String, call : TwilioCall, digits : Int32 | Nil, config : Twiliosim::Config) : ReplyCommand | Nil
       response_body = Twiliosim::Verboice.post(redirect_url, call.account_sid, call.from, call.to, call.status, digits)
       return unless response_body
       ao_message = parse_ao_message(response_body)
       return unless ao_message
-      reply = Twiliosim::Simulator.reply_message(ao_message)
+      reply = Twiliosim::Simulator.reply_message(ao_message, config)
       Log.info { "Call reply - sid: #{call.id} - to: #{call.to} - Reply: #{reply.to_s} - AO message: #{ao_message.to_s}" }
       reply
     end
 
-    def self.perform_response(reply_command : HangUp, call : TwilioCall, db : Twiliosim::DB) : ReplyCommand | Nil
+    def self.perform_response(reply_command : HangUp, call : TwilioCall, db : Twiliosim::DB, config : Twiliosim::Config) : ReplyCommand | Nil
       redirect_url = ao_message_redirect_url(reply_command.ao_message)
       call = finish_and_update_call(call, db)
-      reply_command = post_and_reply(redirect_url, call, nil)
+      reply_command = post_and_reply(redirect_url, call, nil, config)
       return unless reply_command
-      perform_response(reply_command, call, db)
+      perform_response(reply_command, call, db, config)
     end
 
-    def self.perform_response(reply_command : PressDigits, call : TwilioCall, db : Twiliosim::DB) : ReplyCommand | Nil
+    def self.perform_response(reply_command : PressDigits, call : TwilioCall, db : Twiliosim::DB, config : Twiliosim::Config) : ReplyCommand | Nil
       redirect_url = ao_message_redirect_url(reply_command.ao_message)
-      reply_command = post_and_reply(redirect_url, call, reply_command.digits)
+      reply_command = post_and_reply(redirect_url, call, reply_command.digits, config)
       return unless reply_command
-      perform_response(reply_command, call, db)
+      perform_response(reply_command, call, db, config)
     end
 
     private def self.finish_and_update_call(call : TwilioCall, db : Twiliosim::DB) : TwilioCall

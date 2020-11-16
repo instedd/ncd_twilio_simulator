@@ -7,6 +7,15 @@ services:
       - 3000
     volumes:
       - ./src:/app
+    environment:
+      NO_REPLY_PERCENT: 0.5
+      UNRESPONSIVE_TIMEOUT_SECONDS: 10
+      DELAY_REPLY_MIN_SECONDS: 1
+      DELAY_REPLY_MAX_SECONDS: 5
+      INCORRECT_REPLY_PERCENT: 0.5
+      MAX_INCORRECT_REPLY_VALUE: 999
+      STICKY_RESPONDENTS: "true"
+
   ngrok:
     image: wernight/ngrok
     ports:
