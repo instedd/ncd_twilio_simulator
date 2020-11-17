@@ -3,7 +3,10 @@ require "./simulator_command"
 module Twiliosim::Simulator
   def self.reply_message(ao_message : AOMessage, config : Twiliosim::Config) : ReplyCommand | Nil
     message = ao_message.message
-    return HangUp.new(ao_message) if (message == "#hangup") || no_reply?(config)
+    if (message == "#hangup") || no_reply?(config)
+      sleep config.unresponsive_timeout_seconds.seconds
+      return HangUp.new(ao_message)
+    end
 
     command = SimulatorCommand.parse(message)
     return unless command
