@@ -3,7 +3,7 @@ require "./simulator_command"
 module Twiliosim::Simulator
   def self.reply_message(ao_message : AOMessage, config : Twiliosim::Config) : ReplyCommand | Nil
     message = ao_message.message
-    return HangUp.new(ao_message) if (message == "#hangup")
+    return HangUp.new(ao_message) if (message == "#hangup") || no_reply?(config)
 
     command = SimulatorCommand.parse(message)
     return unless command
@@ -16,6 +16,10 @@ module Twiliosim::Simulator
     return unless reply
 
     PressDigits.new(ao_message, reply)
+  end
+
+  private def self.no_reply?(config)
+    config.no_reply_percent >= rand
   end
 
   private def self.incorrect_reply?(config)
