@@ -24,7 +24,11 @@ struct Twiliosim::Config
     @sticky_respondents = sticky_respondents?
   end
 
-  def self.load
+  def no_reply? : Bool
+    @no_reply_percent >= rand
+  end
+
+  def self.load : Twiliosim::Config
     Twiliosim::Config.new
   end
 

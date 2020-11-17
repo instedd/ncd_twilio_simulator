@@ -1,9 +1,9 @@
 require "./simulator_command"
 
 module Twiliosim::Simulator
-  def self.reply_message(ao_message : AOMessage, config : Twiliosim::Config) : ReplyCommand | Nil
+  def self.reply_message(ao_message : AOMessage, config : Twiliosim::Config, no_reply : Bool) : ReplyCommand | Nil
     message = ao_message.message
-    if (message == "#hangup") || no_reply?(config)
+    if message == "#hangup" || no_reply
       sleep config.unresponsive_timeout_seconds.seconds
       return HangUp.new(ao_message)
     end
@@ -24,10 +24,6 @@ module Twiliosim::Simulator
 
   private def self.delay_replay_seconds(config : Twiliosim::Config) : Int32
     rand(config.delay_reply_min_seconds..config.delay_reply_max_seconds)
-  end
-
-  private def self.no_reply?(config : Twiliosim::Config) : Bool
-    config.no_reply_percent >= rand
   end
 
   private def self.incorrect_reply?(config : Twiliosim::Config) : Bool
