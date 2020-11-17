@@ -21,7 +21,7 @@ Every Surveda TTS question is translated by Verboice to a TTS message. For each 
 | `#oneof:1,3,5` | `1` or `3` or `5` |
 | `#numeric:N-M` | a number between `1` and `5` |
 
-If any of these rules apply, the message is ignored.
+If none of these rules apply, the message is ignored.
 
 The following environment variables controls other aspects of the behavior:
 
