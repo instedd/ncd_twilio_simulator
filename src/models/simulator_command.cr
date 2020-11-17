@@ -32,7 +32,7 @@ struct Twiliosim::OneOfCommand < Twiliosim::SimulatorCommand
     # restrict candidates by config
     invalid_candidates = (0..config.max_incorrect_reply_value)
     # restrict candidates by command
-    invalid_candidates = invalid_candidates.to_a.reject! { |x| @choices.any?(x) }
+    invalid_candidates = invalid_candidates.to_a.reject! { |x| @choices.includes?(x) }
     # pick a random candidate
     invalid_candidates.sample unless invalid_candidates.empty?
   end
