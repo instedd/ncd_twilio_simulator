@@ -48,7 +48,7 @@ struct Twiliosim::NumericCommand < Twiliosim::SimulatorCommand
   def self.parse(message : String) : NumericCommand | Nil
     if message =~ /#numeric:\s*(\d+)\s*-\s*(\d+)/
       min = $1.to_i
-      max = $~[2].to_i
+      max = $2.to_i
       Twiliosim::NumericCommand.new min, max
     end
   end
