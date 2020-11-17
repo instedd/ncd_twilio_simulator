@@ -1,17 +1,10 @@
 struct Twiliosim::Config
-  # Percent of respondents that never reply
   property no_reply_percent : Float64
-  # The time of waiting in seconds to hang up
   property unresponsive_timeout_seconds : Int32
-  # Minimun time in seconds of that delay
   property delay_reply_min_seconds : Int32
-  # Maximum time in seconds of that delay
   property delay_reply_max_seconds : Int32
-  # Percent of respondents that reply an incorrect answer
   property incorrect_reply_percent : Float64
-  # Maximum value replied as an incorrect answer
   property max_incorrect_reply_value : Int32
-  # If true, once a respondent replies, it will always reply
   property sticky_respondents : Bool
 
   def initialize
