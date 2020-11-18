@@ -1,6 +1,6 @@
 struct Twiliosim::Config
   property no_reply_percent : Float64
-  property unresponsive_timeout_seconds : Int32
+  property delay_hang_up_seconds : Int32
   property delay_reply_min_seconds : Int32
   property delay_reply_max_seconds : Int32
   property incorrect_reply_percent : Float64
@@ -9,7 +9,7 @@ struct Twiliosim::Config
 
   def initialize
     @no_reply_percent = Config.float_env("NO_REPLY_PERCENT") || 0.0
-    @unresponsive_timeout_seconds = Config.int_env("UNRESPONSIVE_TIMEOUT_SECONDS") || 5
+    @delay_hang_up_seconds = Config.int_env("DELAY_HANG_UP_SECONDS") || 5
     @delay_reply_min_seconds = Config.int_env("DELAY_REPLY_MIN_SECONDS") || 1
     @delay_reply_max_seconds = Config.int_env("DELAY_REPLY_MAX_SECONDS") || 5
     @incorrect_reply_percent = Config.float_env("INCORRECT_REPLY_PERCENT") || 0.0

@@ -4,7 +4,7 @@ module Twiliosim::Simulator
   def self.reply_message(ao_message : AOMessage, config : Twiliosim::Config, no_reply : Bool) : ReplyCommand | Nil
     message = ao_message.message
     if message == "#hangup" || no_reply
-      sleep config.unresponsive_timeout_seconds.seconds
+      sleep config.delay_hang_up_seconds.seconds
       return HangUp.new(ao_message)
     end
 

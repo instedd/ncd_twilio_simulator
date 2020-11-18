@@ -27,10 +27,10 @@ The following environment variables controls other aspects of the behavior:
 
 | Variable | Default | Description |
 |-|-|-|
-| `NO_REPLY_PERCENT` | 0.0 | Percent of respondents that hang up |
-| `UNRESPONSIVE_TIMEOUT_SECONDS` | 5 | Delay in seconds to hang up |
+| `NO_REPLY_PERCENT` | 0.0 | Percent of respondents that don't reply (implemented by hanging up) |
 | `DELAY_REPLY_MIN_SECONDS` | 1 | Minimum delay in seconds to reply |
 | `DELAY_REPLY_MAX_SECONDS` | 5 | Maximum delay in seconds to reply |
 | `INCORRECT_REPLY_PERCENT` | 0.0 | Percent of respondents that reply an incorrect answer |
 | `MAX_INCORRECT_REPLY_VALUE` | 99 | Maximum value replied as an incorrect answer |
 | `STICKY_RESPONDENTS` | true | If true, once a respondent replies, it will always reply during the same call |
+| `DELAY_HANG_UP_SECONDS` | 5 | Delay in seconds to hang up (applying to both the `no reply` condition and the `#hangup` rule) |
