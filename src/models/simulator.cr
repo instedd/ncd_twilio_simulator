@@ -12,10 +12,10 @@ module Twiliosim::Simulator
     return unless command
 
     reply = if incorrect_reply?(config)
-      command.invalid_sample(config)
-    else
-      command.valid_sample
-    end
+              command.invalid_sample(config)
+            else
+              command.valid_sample
+            end
     return unless reply
 
     sleep delay_replay_seconds(config).seconds
@@ -29,6 +29,4 @@ module Twiliosim::Simulator
   private def self.incorrect_reply?(config : Twiliosim::Config) : Bool
     config.incorrect_reply_percent >= rand
   end
-
-
 end

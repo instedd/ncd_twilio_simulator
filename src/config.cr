@@ -37,7 +37,8 @@ struct Twiliosim::Config
     end
   end
 
-  protected def self.float_env(var_name) Float64 | Nil
+  protected def self.float_env(var_name)
+    Float64 | Nil
     if ENV.has_key?(var_name)
       value = string_env(var_name)
       return unless value
