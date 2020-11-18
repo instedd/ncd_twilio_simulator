@@ -7,7 +7,7 @@ abstract struct Twiliosim::Call
   property no_reply : Bool
 
   def initialize(@to : String, @from : String)
-    @id = UUID.random().to_s()
+    @id = UUID.random.to_s
     @no_reply = false
   end
 

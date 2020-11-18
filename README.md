@@ -18,8 +18,8 @@ Every Surveda TTS question is translated by Verboice to a TTS message. For each 
 | Input | Reply |
 |-|-|
 | `#hangup` | hang up |
-| `#oneof:1,3,5` | `1` or `3` or `5` |
-| `#numeric:N-M` | a number between `1` and `5` |
+| `#oneof:N,M,O` | one of the the following numbers: `N`, `M` or `O` |
+| `#numeric:N-M` | a number between `N` and `M` (including them) |
 
 If none of these rules apply, the message is ignored.
 

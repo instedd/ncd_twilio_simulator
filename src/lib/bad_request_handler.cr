@@ -1,5 +1,6 @@
 class Twiliosim::BadRequestHandler
   include HTTP::Handler
+
   def call(context : HTTP::Server::Context)
     begin
       call_next(context)
