@@ -9,6 +9,65 @@ It mocks the following Twilio endpoints used by Verboice:
 1. [Fetch an IncomingPhoneNumber resource](https://www.twilio.com/docs/phone-numbers/api/incomingphonenumber-resource#fetch-an-incomingphonenumber-resource)
 2. [Initiate an outbound call with Twilio](https://www.twilio.com/docs/voice/make-calls#initiate-an-outbound-call-with-twilio)
 
+## Dev usage
+
+Pre-requisites:
+  - [docker-dev](https://github.com/waj/dockerdev#run) is running
+
+1. Run `ngrok`:
+
+```bash
+docker-compose -d up ngrok
+```
+
+2. Run `twilisim`:
+
+```bash
+docker-compose up web
+```
+
+4. Your public endpoint is listed [here](http://ngrok.ncd_twilio_simulator.lvh.me/). Copy your `https` URL:
+
+![ngrok URL](https://user-images.githubusercontent.com/39921597/99557501-88692e00-29a1-11eb-92c5-d27be72885e4.png)
+
+5. Go to your Verboice instance and create a new Twilio Channel using your public endpoint as your channel base URL:
+
+![channel base URL](https://user-images.githubusercontent.com/39921597/99560107-442b5d00-29a4-11eb-9f74-e105961b22d5.png)
+
+6. Start making your calls. The Twilio simulator will answer them following [this behaviour](https://github.com/instedd/ncd_twilio_simulator#behaviour)
+
+## Usage with Docker
+
+1. Create your Docker image:
+
+```bash
+docker build -t twiliosim .
+```
+
+2. Run:
+
+```bash
+docker run --rm -p 3000:80 twiliosim
+```
+
+3. Your endpoint is: <localhost:3000>
+
+## Usage (minimal)
+
+1. Create your executable:
+
+```bash
+shards build --release
+```
+
+2. Run:
+
+```bash
+bin/twiliosim
+```
+
+3. Your endpoint is: <localhost:3000>
+
 ## Behaviour
 
 This App was born inspired by the [NCD local gateway simulator](https://github.com/instedd/ncd_local_gateway_simulator), a SMS stress test tool for Surveda. So its expected behaviour is similar to [this one](https://github.com/instedd/ncd_local_gateway_simulator#behaviour).
