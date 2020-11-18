@@ -27,7 +27,7 @@ module Twiliosim::CallController
     end
   end
 
-  private def self.create_and_start_call(to : String, from : String, account_sid : String, db : Twiliosim::DB, config : Twiliosim::Config) : TwilioCall
+  private def self.create_and_start_call(to : String, from : String, account_sid : String, db : Twiliosim::DB, config : Twiliosim::Config) : Twiliosim::Call
     call = db.create_call(to, from, account_sid)
     # When sticky_respondents the no_reply setting applies once for all responses in the same call
     call.no_reply = config.no_reply? if config.sticky_respondents
@@ -61,14 +61,14 @@ module Twiliosim::CallController
     response.to_json(context.response)
   end
 
-  private def self.handle_created_call(verboice_url : String, call : TwilioCall, db : Twiliosim::DB, config : Twiliosim::Config) : ReplyCommand | Nil
+  private def self.handle_created_call(verboice_url : String, call : Twiliosim::Call, db : Twiliosim::DB, config : Twiliosim::Config) : ReplyCommand | Nil
     reply_command = Orchestrator.post_and_reply(verboice_url, call, nil, config)
     return unless reply_command
     Orchestrator.perform_response(reply_command, call, db, config)
   end
 
   module Twiliosim::Orchestrator
-    def self.post_and_reply(redirect_url : String, call : TwilioCall, digits : Int32 | Nil, config : Twiliosim::Config) : ReplyCommand | Nil
+    def self.post_and_reply(redirect_url : String, call : Twiliosim::Call, digits : Int32 | Nil, config : Twiliosim::Config) : ReplyCommand | Nil
       response_body = Twiliosim::Verboice.post(redirect_url, call.account_sid, call.from, call.to, call.status, digits)
       return unless response_body
       ao_message = parse_ao_message(response_body)
@@ -78,7 +78,7 @@ module Twiliosim::CallController
       reply
     end
 
-    private def self.no_reply?(call : TwilioCall, config : Twiliosim::Config)
+    private def self.no_reply?(call : Twiliosim::Call, config : Twiliosim::Config)
       if config.sticky_respondents
         call.no_reply
       else
@@ -87,38 +87,32 @@ module Twiliosim::CallController
       end
     end
 
-    def self.perform_response(reply_command : HangUp, call : TwilioCall, db : Twiliosim::DB, config : Twiliosim::Config) : ReplyCommand | Nil
-      redirect_url = ao_message_redirect_url(reply_command.ao_message)
+    def self.perform_response(reply_command : HangUp, call : Twiliosim::Call, db : Twiliosim::DB, config : Twiliosim::Config) : ReplyCommand | Nil
       call = finish_and_update_call(call, db)
-      reply_command = post_and_reply(redirect_url, call, nil, config)
+      reply_command = post_and_reply(reply_command.ao_message.redirect_url, call, nil, config)
       return unless reply_command
       perform_response(reply_command, call, db, config)
     end
 
-    def self.perform_response(reply_command : PressDigits, call : TwilioCall, db : Twiliosim::DB, config : Twiliosim::Config) : ReplyCommand | Nil
-      redirect_url = ao_message_redirect_url(reply_command.ao_message)
-      reply_command = post_and_reply(redirect_url, call, reply_command.digits, config)
+    def self.perform_response(reply_command : PressDigits, call : Twiliosim::Call, db : Twiliosim::DB, config : Twiliosim::Config) : ReplyCommand | Nil
+      reply_command = post_and_reply(reply_command.ao_message.redirect_url, call, reply_command.digits, config)
       return unless reply_command
       perform_response(reply_command, call, db, config)
     end
 
-    private def self.finish_and_update_call(call : TwilioCall, db : Twiliosim::DB) : TwilioCall
+    private def self.finish_and_update_call(call : Twiliosim::Call, db : Twiliosim::DB) : Twiliosim::Call
       call.finish
       call = db.update_call(call)
       Log.info { "Call finished - sid: #{call.id} - to: #{call.to}" }
       call
     end
 
-    private def self.parse_ao_message(response_body : String) : TwilioAOMessage | Nil
+    private def self.parse_ao_message(response_body : String) : Twiliosim::AOMessage | Nil
       if %r(<Say .+>(.+)<\/Say>.*<Redirect>(.+)<\/Redirect>).match(response_body)
         message = $1
         redirect_url = $2
-        TwilioAOMessage.new(message, redirect_url)
+        Twiliosim::AOMessage.new(message, redirect_url)
       end
-    end
-
-    private def self.ao_message_redirect_url(ao_message : TwilioAOMessage)
-      ao_message.redirect_url
     end
   end
 end
