@@ -25,11 +25,11 @@ struct Twiliosim::Config
     Twiliosim::Config.new
   end
 
-  protected def self.string_env(var_name) : String | Nil
+  protected def self.string_env(var_name : String) : String | Nil
     ENV[var_name] if ENV.has_key?(var_name)
   end
 
-  protected def self.int_env(var_name) : Int32 | Nil
+  protected def self.int_env(var_name : String) : Int32 | Nil
     if ENV.has_key?(var_name)
       value = string_env(var_name)
       return unless value
@@ -37,8 +37,7 @@ struct Twiliosim::Config
     end
   end
 
-  protected def self.float_env(var_name)
-    Float64 | Nil
+  protected def self.float_env(var_name : String) : Float64 | Nil
     if ENV.has_key?(var_name)
       value = string_env(var_name)
       return unless value
@@ -46,7 +45,7 @@ struct Twiliosim::Config
     end
   end
 
-  private def sticky_respondents?
+  private def sticky_respondents? : Bool
     value = Config.string_env("STICKY_RESPONDENTS")
     return true unless value
     return value == "true"
