@@ -70,9 +70,70 @@ describe SimulatorCommand do
         choices = [1, 2]
         simulator_command = OneOfCommand.new(choices)
 
-        invalid_sample = simulator_command.invalid_sample(Config.new)
+        invalid_sample = simulator_command.invalid_sample(Config.load)
 
         choices.includes?(invalid_sample).should eq false
+      end
+    end
+  end
+
+  describe NumericCommand do
+    describe "#min" do
+      it "initializes OK" do
+        min = 1
+        max = 2
+
+        simulator_command = NumericCommand.new(min, max)
+
+        simulator_command.min.should eq min
+      end
+    end
+
+    describe "#max" do
+      it "initializes OK" do
+        min = 1
+        max = 2
+
+        simulator_command = NumericCommand.new(min, max)
+
+        simulator_command.max.should eq max
+      end
+    end
+
+    describe "#parse" do
+      it "returns a NumericCommand initialized OK" do
+        min = 1
+        max = 2
+        control_command = NumericCommand.new(min, max)
+        message = "#numeric:#{min}-#{max}"
+
+        parsed_command = NumericCommand.parse(message)
+
+        parsed_command.should eq control_command
+      end
+    end
+
+    describe "#valid_sample" do
+      it "returns a sample in range" do
+        min = 1
+        max = 2
+        simulator_command = NumericCommand.new(min, max)
+
+        valid_sample = simulator_command.valid_sample
+
+        (min..max).to_a.includes?(valid_sample).should eq true
+      end
+    end
+
+    describe "#invalid_sample" do
+      it "returns a sample not in range" do
+        min = 1
+        max = 2
+        simulator_command = NumericCommand.new(min, max)
+
+        invalid_sample = simulator_command.invalid_sample(Config.load)
+
+        (min..max).to_a.includes?(invalid_sample).should eq false
       end
     end
   end
