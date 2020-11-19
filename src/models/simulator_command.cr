@@ -30,9 +30,9 @@ struct Twiliosim::OneOfCommand < Twiliosim::SimulatorCommand
 
   def invalid_sample(config : Twiliosim::Config) : Int32 | Nil
     # restrict candidates by config
-    invalid_candidates = (0..config.max_incorrect_reply_value)
+    invalid_candidates = (0..config.max_incorrect_reply_value).to_a
     # restrict candidates by command
-    invalid_candidates = invalid_candidates.to_a.reject! { |x| @choices.includes?(x) }
+    invalid_candidates = invalid_candidates.reject! { |x| @choices.includes?(x) }
     # pick a random candidate
     invalid_candidates.sample unless invalid_candidates.empty?
   end
@@ -59,9 +59,9 @@ struct Twiliosim::NumericCommand < Twiliosim::SimulatorCommand
 
   def invalid_sample(config : Twiliosim::Config) : Int32 | Nil
     # restrict candidates by config
-    invalid_candidates = (0..config.max_incorrect_reply_value)
+    invalid_candidates = (0..config.max_incorrect_reply_value).to_a
     # restrict candidates by command
-    invalid_candidates = invalid_candidates.to_a.reject!(@min..@max)
+    invalid_candidates = invalid_candidates.reject!(@min..@max)
     # pick a random candidate
     invalid_candidates.sample unless invalid_candidates.empty?
   end
