@@ -1,5 +1,5 @@
 require "spec"
-require "../src/models/call"
+require "../../src/models/call"
 
 include Twiliosim
 
@@ -32,9 +32,10 @@ describe Call do
     it "initializes with a new (random) UUID" do
       call_0 = Call.new("foo_0", "bar_1", "baz_2")
       call_1 = Call.new("foo_1", "bar_1", "baz_1")
+      uuid_size = 36
 
-      call_0.id.size.should eq 36
-      call_1.id.size.should eq 36
+      call_0.id.size.should eq uuid_size
+      call_1.id.size.should eq uuid_size
       call_0.id.should_not eq call_1.id
     end
   end
