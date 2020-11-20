@@ -9,64 +9,56 @@ It mocks the following Twilio endpoints used by Verboice:
 1. [Fetch an IncomingPhoneNumber resource](https://www.twilio.com/docs/phone-numbers/api/incomingphonenumber-resource#fetch-an-incomingphonenumber-resource)
 2. [Initiate an outbound call with Twilio](https://www.twilio.com/docs/voice/make-calls#initiate-an-outbound-call-with-twilio)
 
-## Dev usage
+## Usage (dev path)
 
 Pre-requisites:
   - [docker-dev](https://github.com/waj/dockerdev#run) is running
 
-1. Run `ngrok`:
-
-```bash
-docker-compose -d up ngrok
-```
-
-2. Run `twilisim`:
+1. Run `twilisim`:
 
 ```bash
 docker-compose up web
 ```
 
-4. Your public endpoint is listed [here](http://ngrok.ncd_twilio_simulator.lvh.me/). Copy your `https` URL:
+2. Your endpoint is <http://web.ncd_twilio_simulator.lvh.me/>
+
+3. Run `ngrok` if needed:
+
+```bash
+docker-compose -d up ngrok
+```
+
+4. Your public endpoint is listed [here](http://ngrok.ncd_twilio_simulator.lvh.me/).
+
+5. Follow the end-user usage path (starting at point 6) to set up your channel in Verboice.
+
+## Usage (end-user path)
+
+1. Pick a port number (in this example: 8081)
+
+2. Run:
+
+```bash
+docker run --rm -t -i -p 8081:80 instedd/twiliosim
+```
+
+3. Your endpoint is: <http://localhost:8081/>
+
+4. Expose your endpoint publicly using [ngrok](https://ngrok.com/docs#getting-started-expose) or similar if needed.
+
+```bash
+ngrok http 8081
+```
+
+5. Your public endpoint is listed [here](http://127.0.0.1:4040/).
+
+6. Copy your `https` URL:
 
 ![ngrok URL](https://user-images.githubusercontent.com/39921597/99557501-88692e00-29a1-11eb-92c5-d27be72885e4.png)
 
-5. Go to your Verboice instance and create a new Twilio Channel using your public endpoint as your channel base URL:
+7. Go to your Verboice instance and create a new Twilio Channel using your public endpoint as your channel base URL:
 
 ![channel base URL](https://user-images.githubusercontent.com/39921597/99560107-442b5d00-29a4-11eb-9f74-e105961b22d5.png)
-
-6. Start making your calls. The Twilio simulator will answer them following [this behaviour](https://github.com/instedd/ncd_twilio_simulator#behaviour)
-
-## Usage with Docker
-
-1. Create your Docker image:
-
-```bash
-docker build -t twiliosim .
-```
-
-2. Run:
-
-```bash
-docker run --rm -p 3000:80 twiliosim
-```
-
-3. Your endpoint is: <localhost:3000>
-
-## Usage (minimal)
-
-1. Create your executable:
-
-```bash
-shards build --release
-```
-
-2. Run:
-
-```bash
-bin/twiliosim
-```
-
-3. Your endpoint is: <localhost:3000>
 
 ## Behaviour
 
