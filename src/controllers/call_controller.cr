@@ -8,22 +8,20 @@ require "../models/verboice"
 
 module Twiliosim::CallController
   def self.handle_request(context : HTTP::Server::Context, account_sid : String, db : Twiliosim::DB, config : Twiliosim::Config)
-    body_params = get_call_request_body_params(context.request)
-    from = body_params["from"]
-    to = body_params["to"]
-    verboice_url = body_params["verboice_url"]
+    params = HTTP::Params.parse(context.request.body.not_nil!.gets_to_end)
+    from = params["From"]
+    to = params["To"]
+    url = params["Url"]
 
     Log.info { "Call request - #{context.request.path} - From: #{from} - To: #{to} - Verboice Url: #{verboice_url}" }
 
     call = create_and_start_call(to, from, account_sid, db, config)
     response_call_created(context, call.id)
+
     spawn do
       # We give Verboice a sec to process the response. Just in case it needs it.
-      sleep 1.seconds
-
-      # verboice_url cannot be nil, so the `not_nil!` call shouldn't be here.
-      # It's included here just because of [this Crystal compiler known issue](https://github.com/crystal-lang/crystal/issues/3093)
-      handle_created_call(verboice_url.not_nil!, call, db, config)
+      sleep 2.seconds
+      handle_created_call(url, call, db, config)
     end
   end
 
@@ -35,23 +33,6 @@ module Twiliosim::CallController
     call = db.update_call(call)
     Log.info { "Call started - sid: #{call.id} - account_sid: #{call.account_sid} - from: #{call.from} - to: #{call.to}" }
     call
-  end
-
-  private def self.get_call_request_body_params(request : HTTP::Request) : {to: String, from: String, verboice_url: String}
-    params = get_validated_body_params(request, {"From", "To", "Url"})
-    {to: params["To"], from: params["From"], verboice_url: params["Url"]}
-  end
-
-  private def self.get_validated_body_params(request : HTTP::Request, required_params : {String, String, String}) : HTTP::Params
-    body = request.body
-    raise BadRequestException.new("Missing request body") if body.nil?
-    params = HTTP::Params.parse(body.gets_to_end)
-    required_params.map do |req_param|
-      param = params[req_param]?
-      raise BadRequestException.new("Missing #{req_param}") if param.nil?
-      raise BadRequestException.new("#{req_param} can't be blank") if param.blank?
-    end
-    params
   end
 
   private def self.response_call_created(context : HTTP::Server::Context, sid : String)
