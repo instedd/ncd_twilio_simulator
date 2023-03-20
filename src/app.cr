@@ -4,8 +4,16 @@ require "./controllers/*"
 class Twiliosim::App
   include HTTP::Handler
 
-  @db = Twiliosim::DB.new
-  @config = Twiliosim::Config.load
+  @@db = DB.load
+  @@config = Twiliosim::Config.load
+
+  def self.db : DB
+    @@db
+  end
+
+  def self.config : Config
+    @@config
+  end
 
   def call(context : HTTP::Server::Context)
     case context.request.path
@@ -16,14 +24,11 @@ class Twiliosim::App
       Twiliosim::IncomingPhoneNumbersController.handle_request($1, context)
 
     when %r(/Accounts/(.+)/Calls.*)
-      account_sid = $1
-      Twiliosim::CallController.handle_request(context, account_sid, @db, @config)
+      Twiliosim::CallController.handle_request(context, $1)
 
     else
       context.response.status = :not_found
       context.response << "404 NOT FOUND"
-
-      # call_next(context)
     end
 
     context.response.flush

@@ -1,14 +1,17 @@
 require "http"
 require "./app"
-require "./lib/bad_request_handler"
 require "log"
 
 module Twiliosim
   VERSION = "0.1.0"
+
+  Log = ::Log.for("twilio.simu")
 end
 
+Log.setup_from_env
+
 server = HTTP::Server.new([
-  Twiliosim::BadRequestHandler.new,
+  HTTP::LogHandler.new,
   Twiliosim::App.new,
 ])
 
