@@ -1,4 +1,3 @@
-require "./models/reply_command"
 require "./models/ao_message"
 require "./models/simulator_command"
 

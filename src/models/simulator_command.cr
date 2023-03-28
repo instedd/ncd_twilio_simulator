@@ -9,11 +9,11 @@ module Twiliosim
     end
 
     def valid_sample : Int32
-      {% raise "NotImplementedError: #{@type}#valid_sample" %}
+      raise "NotImplementedError: {{@type}}#valid_sample"
     end
 
     def invalid_sample(max_incorrect_reply_value : Int32) : Int32?
-      {% raise "NotImplementedError: #{@type}#invalid_sample" %}
+      raise "NotImplementedError: {{@type}}#invalid_sample"
     end
 
     def sample(incorrect_reply : Bool, max_incorrect_reply_value : Int32) : Int32?
