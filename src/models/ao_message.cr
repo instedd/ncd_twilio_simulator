@@ -7,7 +7,10 @@ struct Twiliosim::AOMessage
     getter num_digits : Int32?
 
     def self.new(node : XML::Node)
-      new(node["timeout"].to_i, node["numDigits"]?.try(&.to_i))
+      if value = node["numDigits"]?
+        num_digits = value == "infinity" ? Int32::MAX : value.to_i
+      end
+      new(node["timeout"].to_i, num_digits)
     end
 
     def initialize(@timeout : Int32, @num_digits : Int32?)

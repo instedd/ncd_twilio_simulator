@@ -99,4 +99,24 @@ describe Twiliosim::AOMessage do
     msg.redirect?.should eq(nil)
     msg.hangup?.should eq(false)
   end
+
+  it "Gather num_digits=infinity" do
+    twiml = <<-XML
+    <?xml version="1.0"?>
+    <Response>
+      <Gather timeout="5" finishOnKey="" numDigits="infinity">
+        <Say language="en">#numeric:1-120</Say>
+      </Gather>
+      <Redirect>http://broker.verboice.lvh.me:8080/</Redirect>
+    </Response>
+    XML
+
+    msg = Twiliosim::AOMessage.new(twiml)
+    msg.message.should eq(twiml)
+    msg.received_at.should_not eq(nil)
+    msg.gather?.try(&.timeout).should eq(5)
+    msg.gather?.try(&.num_digits).should eq(Int32::MAX)
+    msg.say?.should eq("#numeric:1-120")
+    msg.redirect?.should eq("http://broker.verboice.lvh.me:8080/")
+  end
 end

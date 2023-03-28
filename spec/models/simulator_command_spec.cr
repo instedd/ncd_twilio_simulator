@@ -18,7 +18,7 @@ describe Twiliosim::SimulatorCommand do
     end
 
     it "returns a Twiliosim::NumericCommand" do
-      message = "#numeric:1-2"
+      message = "#numeric:1-120"
 
       command = Twiliosim::SimulatorCommand.parse(message)
       command.is_a?(Twiliosim::NumericCommand).should eq(true)
@@ -94,8 +94,8 @@ describe Twiliosim::SimulatorCommand do
 
     describe "#parse" do
       it "returns a Twiliosim::NumericCommand initialized OK" do
-        command = Twiliosim::NumericCommand.parse("#numeric:1-2")
-        command.should eq(Twiliosim::NumericCommand.new(1, 2))
+        command = Twiliosim::NumericCommand.parse("#numeric:1-120")
+        command.should eq(Twiliosim::NumericCommand.new(1, 120))
       end
     end
 
