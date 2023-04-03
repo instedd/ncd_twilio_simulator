@@ -2,138 +2,130 @@ require "spec"
 require "../../src/models/simulator_command"
 require "../../src/config"
 
-include Twiliosim
-
-describe SimulatorCommand do
+describe Twiliosim::SimulatorCommand do
   describe "#parse" do
     it "returns nil when invalid" do
-      simulator_command = SimulatorCommand.parse("foo")
-
-      simulator_command.should eq nil
+      command = Twiliosim::SimulatorCommand.parse("foo")
+      command.should eq(nil)
     end
 
-    it "returns a OneOfCommand" do
+    it "returns a Twiliosim::OneOfCommand" do
       message = "#oneof:1,2"
 
-      simulator_command = SimulatorCommand.parse(message)
-
-      simulator_command.is_a?(OneOfCommand).should eq true
-      simulator_command.should eq OneOfCommand.parse(message)
+      command = Twiliosim::SimulatorCommand.parse(message)
+      command.is_a?(Twiliosim::OneOfCommand).should eq(true)
+      command.should eq(Twiliosim::OneOfCommand.parse(message))
     end
 
-    it "returns a NumericCommand" do
-      message = "#numeric:1-2"
+    it "returns a Twiliosim::NumericCommand" do
+      message = "#numeric:1-120"
 
-      simulator_command = SimulatorCommand.parse(message)
+      command = Twiliosim::SimulatorCommand.parse(message)
+      command.is_a?(Twiliosim::NumericCommand).should eq(true)
+      command.should eq(Twiliosim::NumericCommand.parse(message))
+    end
 
-      simulator_command.is_a?(NumericCommand).should eq true
-      simulator_command.should eq NumericCommand.parse(message)
+    it "returns a Twiliosim::HangupCommand" do
+      message = "#hangup"
+
+      command = Twiliosim::SimulatorCommand.parse(message)
+      command.is_a?(Twiliosim::HangupCommand).should eq(true)
+      command.should eq(Twiliosim::HangupCommand.parse(message))
     end
   end
 
-  describe OneOfCommand do
+  describe Twiliosim::OneOfCommand do
     describe "#choices" do
       it "initializes OK" do
-        foo = [1, 2]
-
-        simulator_command = OneOfCommand.new(foo)
-
-        simulator_command.choices.should eq foo
+        choices = [1, 2]
+        command = Twiliosim::OneOfCommand.new(choices)
+        command.choices.should eq(choices)
       end
     end
 
     describe "#parse" do
-      it "returns a OneOfCommand initialized OK" do
-        foo = [1, 2]
-        control_command = OneOfCommand.new(foo)
-        message = "#oneof:1,2"
-
-        parsed_command = OneOfCommand.parse(message)
-
-        parsed_command.should eq control_command
+      it "returns a Twiliosim::OneOfCommand initialized OK" do
+        command = Twiliosim::OneOfCommand.parse("#oneof:1,2")
+        command.should eq(Twiliosim::OneOfCommand.new([1, 2]))
       end
     end
 
     describe "#valid_sample" do
       it "returns a sample in choices" do
         choices = [1, 2]
-        simulator_command = OneOfCommand.new(choices)
-
-        valid_sample = simulator_command.valid_sample
-
-        choices.includes?(valid_sample).should eq true
+        command = Twiliosim::OneOfCommand.new(choices)
+        valid_sample = command.valid_sample
+        choices.includes?(valid_sample).should eq(true)
       end
     end
 
     describe "#invalid_sample" do
       it "returns a sample not in choices" do
         choices = [1, 2]
-        simulator_command = OneOfCommand.new(choices)
+        command = Twiliosim::OneOfCommand.new(choices)
+        invalid_sample = command.invalid_sample(max_incorrect_reply_value: 5)
+        choices.includes?(invalid_sample).should eq(false)
+      end
+    end
 
-        invalid_sample = simulator_command.invalid_sample(Config.load)
+    describe "#sample" do
+      it "returns a sample in range" do
+        command = Twiliosim::NumericCommand.new(1, 2)
+        valid_sample = command.sample(incorrect_reply: false, max_incorrect_reply_value: 5)
+        (1..2).includes?(valid_sample.not_nil!).should eq(true)
+      end
 
-        choices.includes?(invalid_sample).should eq false
+      it "returns an invalid sample" do
+        command = Twiliosim::NumericCommand.new(1, 2)
+        invalid_sample = command.sample(incorrect_reply: true, max_incorrect_reply_value: 5)
+        (1..2).includes?(invalid_sample.not_nil!).should eq(false)
       end
     end
   end
 
-  describe NumericCommand do
-    describe "#min" do
+  describe Twiliosim::NumericCommand do
+    describe "#min and #max" do
       it "initializes OK" do
-        min = 1
-        max = 2
-
-        simulator_command = NumericCommand.new(min, max)
-
-        simulator_command.min.should eq min
-      end
-    end
-
-    describe "#max" do
-      it "initializes OK" do
-        min = 1
-        max = 2
-
-        simulator_command = NumericCommand.new(min, max)
-
-        simulator_command.max.should eq max
+        command = Twiliosim::NumericCommand.new(1, 2)
+        command.min.should eq(1)
+        command.max.should eq(2)
       end
     end
 
     describe "#parse" do
-      it "returns a NumericCommand initialized OK" do
-        min = 1
-        max = 2
-        control_command = NumericCommand.new(min, max)
-        message = "#numeric:#{min}-#{max}"
-
-        parsed_command = NumericCommand.parse(message)
-
-        parsed_command.should eq control_command
+      it "returns a Twiliosim::NumericCommand initialized OK" do
+        command = Twiliosim::NumericCommand.parse("#numeric:1-120")
+        command.should eq(Twiliosim::NumericCommand.new(1, 120))
       end
     end
 
     describe "#valid_sample" do
       it "returns a sample in range" do
-        min = 1
-        max = 2
-        simulator_command = NumericCommand.new(min, max)
-
-        valid_sample = simulator_command.valid_sample
-
-        (min..max).to_a.includes?(valid_sample).should eq true
+        command = Twiliosim::NumericCommand.new(1, 2)
+        valid_sample = command.valid_sample
+        (1..2).includes?(valid_sample).should eq(true)
       end
     end
 
     describe "#invalid_sample" do
       it "returns a sample not in range" do
-        min = 1
-        max = 2
-        simulator_command = NumericCommand.new(min, max)
+        command = Twiliosim::NumericCommand.new(1, 2)
+        invalid_sample = command.invalid_sample(max_incorrect_reply_value: 5)
+        (1..2).includes?(invalid_sample.not_nil!).should eq(false)
+      end
+    end
 
-        invalid_sample = simulator_command.invalid_sample(Config.load)
+    describe "#sample" do
+      it "returns a sample in range" do
+        command = Twiliosim::NumericCommand.new(1, 2)
+        valid_sample = command.sample(incorrect_reply: false, max_incorrect_reply_value: 5)
+        (1..2).includes?(valid_sample.not_nil!).should eq(true)
+      end
 
-        (min..max).to_a.includes?(invalid_sample).should eq false
+      it "returns an invalid sample" do
+        command = Twiliosim::NumericCommand.new(1, 2)
+        invalid_sample = command.sample(incorrect_reply: true, max_incorrect_reply_value: 5)
+        (1..2).includes?(invalid_sample.not_nil!).should eq(false)
       end
     end
   end

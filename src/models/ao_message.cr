@@ -1,11 +1,64 @@
-struct Twiliosim::AOMessage
-  getter message : String
-  getter redirect_url : String
+require "xml"
+require "json"
 
-  def initialize(@message : String, @redirect_url : String)
+struct Twiliosim::AOMessage
+  struct Gather
+    getter timeout : Int32
+    getter num_digits : Int32?
+
+    def self.new(node : XML::Node)
+      if value = node["numDigits"]?
+        num_digits = value == "infinity" ? Int32::MAX : value.to_i
+      end
+      new(node["timeout"].to_i, num_digits)
+    end
+
+    def initialize(@timeout : Int32, @num_digits : Int32?)
+    end
   end
 
-  def to_s : String
-    "AOMessage - #{@redirect_url} - #{@message}"
+  include JSON::Serializable
+
+  getter message : String
+  getter received_at : Time
+
+  @[JSON::Field(ignore: true)]
+  @twiml : XML::Node?
+
+  def initialize(@message : String, @received_at = Time.utc)
+  end
+
+  def crashed? : Bool
+    twiml.xpath_float("count(//HTML)") > 0
+  end
+
+  def gather? : Gather?
+    if node = twiml.xpath_node("//Gather")
+      Gather.new(node)
+    end
+  end
+
+  def play? : String?
+    twiml.xpath_string("string(//Play[text()])").presence
+  end
+
+  def say? : String?
+    twiml.xpath_string("string(//Say[text()])").presence
+  end
+
+  def redirect? : String?
+    twiml.xpath_string("string(//Redirect[text()])").presence
+  end
+
+  def hangup? : Bool
+    twiml.xpath_float("count(//Hangup)") > 0
+  end
+
+  private def twiml : XML::Node
+    @twiml ||= XML.parse(@message)
+  end
+
+  def inspect(io : IO) : Nil
+    io << "#<AO received_at=#{@received_at} message=#{@message.inspect}>"
   end
 end

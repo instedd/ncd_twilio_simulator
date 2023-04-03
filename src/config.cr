@@ -9,9 +9,9 @@ struct Twiliosim::Config
 
   def initialize
     @no_reply_percent = Config.float_env("NO_REPLY_PERCENT") || 0.0
-    @delay_hang_up_seconds = Config.int_env("DELAY_HANG_UP_SECONDS") || 5
+    @delay_hang_up_seconds = Config.int_env("DELAY_HANG_UP_SECONDS") || 3
     @delay_reply_min_seconds = Config.int_env("DELAY_REPLY_MIN_SECONDS") || 1
-    @delay_reply_max_seconds = Config.int_env("DELAY_REPLY_MAX_SECONDS") || 5
+    @delay_reply_max_seconds = Config.int_env("DELAY_REPLY_MAX_SECONDS") || 3
     @incorrect_reply_percent = Config.float_env("INCORRECT_REPLY_PERCENT") || 0.0
     @max_incorrect_reply_value = Config.int_env("MAX_INCORRECT_REPLY_VALUE") || 99
     @sticky_respondents = sticky_respondents?
@@ -19,6 +19,18 @@ struct Twiliosim::Config
 
   def no_reply? : Bool
     @no_reply_percent >= rand
+  end
+
+  def incorrect_reply? : Bool
+    @incorrect_reply_percent >= rand
+  end
+
+  def delay_reply_seconds : Time::Span
+    rand(@delay_reply_min_seconds..@delay_reply_max_seconds).seconds
+  end
+
+  def delay_hang_up_seconds : Time::Span
+    @delay_hang_up_seconds.seconds
   end
 
   def self.load : Twiliosim::Config
