@@ -6,15 +6,14 @@ class Twiliosim::Call
   include JSON::Serializable
 
   getter id : String
-  getter account_sid : String
+  getter username : String
   getter to : String
   getter from : String
-  getter url : String
   property no_reply : Bool
   property status : String
   getter messages : Array(AOMessage | ATMessage)
 
-  def initialize(@to : String, @from : String, @account_sid : String, @url : String)
+  def initialize(@to : String, @from : String, @username : String)
     @id = Random::DEFAULT.hex(4)
     @no_reply = false
     @status = "queued"
@@ -40,6 +39,10 @@ class Twiliosim::Call
 
   def completed : Nil
     @status = "completed"
+  end
+
+  def active? : Bool
+    @status == "in-progress" || @status == "queued"
   end
 
   def no_reply?

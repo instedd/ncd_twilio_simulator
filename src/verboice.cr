@@ -1,26 +1,27 @@
 class Twiliosim::Verboice
   def initialize(@call : Call)
+    @url = "http://broker.verboice.lvh.me:8080/africas_talking"
   end
 
-  def post(url : String, digits : Int32 | String | Nil = nil) : String
+  def post(digits : Int32 | String | Nil = nil) : String
     params = {
-      "CallSid" => @call.id,
-      "AccountSid" => @call.account_sid,
-      "From" => @call.from,
-      "To" => @call.to,
-      "CallStatus" => @call.status,
+      "isActive" => @call.active? ? "1" : "0",
+      "sessionId" => @call.id,
+      "direction" => "outbound",
+      "destinationNumber" => @call.from,
+      "callerNumber" => @call.to
     }
-    params["Digits"] = digits.to_s if digits
+    params["dtmfDigits"] = digits.to_s if digits
     request_body = HTTP::Params.encode(params)
     headers = HTTP::Headers{ "content-type" => "application/x-www-urlencoded" }
 
-    Log.trace { "POST url: #{url} request: #{request_body} ..." }
-    @call << ATMessage.new(url, @call.status, digits)
+    Log.trace { "POST url: #{@url} request: #{request_body} ..." }
+    @call << ATMessage.new(@call.id, @call.status, digits)
 
-    HTTP::Client.post(url, headers: headers, body: request_body) do |response|
+    HTTP::Client.post(@url, headers: headers, body: request_body) do |response|
       response_body = response.body_io.gets_to_end
 
-      Log.trace { "POST url: #{url} request: #{request_body}\nheaders: #{response.headers}\nresponse: #{response_body}\n" }
+      Log.trace { "POST url: #{@url} request: #{request_body}\nheaders: #{response.headers}\nresponse: #{response_body}\n" }
       @call << AOMessage.new(response_body)
 
       response_body

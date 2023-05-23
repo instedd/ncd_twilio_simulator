@@ -36,17 +36,17 @@ class Twiliosim::Simulator
 
     if @call.no_reply?
       @call.no_answer
-      # we don't report to Verboice (we might if `StatusCallbackEvent` was set & implemented by Verboice)
     else
       @call.in_progress
-      @verboice.post(@call.url)
     end
+
+    @verboice.post
   end
 
   private def process : Nil
     # handle previously received AO
     ao_message = @call.last_ao_message
-    timeout = 5
+    timeout = 30
     digits = nil
 
     raise "ERROR: remote server crashed." if ao_message.crashed?
@@ -63,8 +63,8 @@ class Twiliosim::Simulator
       command = SimulatorCommand.parse(cmd)
 
       # received <Gather>
-      if gather = ao_message.gather?
-        timeout = gather.timeout
+      if get_digits = ao_message.get_digits?
+        timeout = get_digits.timeout
       end
 
       if command.is_a?(HangupCommand)
@@ -80,16 +80,13 @@ class Twiliosim::Simulator
       end
     end
 
-    if redirect_url = ao_message.redirect?
-      if @call.no_reply?
-        sleep(timeout.seconds)
-        @verboice.post(redirect_url, "timeout")
-      else
-        sleep(App.config.delay_reply_seconds)
-        @verboice.post(redirect_url, digits)
-      end
+    if @call.no_reply?
+      sleep(timeout.seconds)
+      @call.completed
+      @verboice.post
     else
-      raise "ERROR: missing <Redirect> or <Hangup>; can't send timeout/pressed digits or terminate call."
+      sleep(App.config.delay_reply_seconds)
+      @verboice.post(digits)
     end
   end
 end

@@ -2,7 +2,7 @@ require "xml"
 require "json"
 
 struct Twiliosim::AOMessage
-  struct Gather
+  struct GetDigits
     getter timeout : Int32
     getter num_digits : Int32?
 
@@ -23,39 +23,35 @@ struct Twiliosim::AOMessage
   getter received_at : Time
 
   @[JSON::Field(ignore: true)]
-  @twiml : XML::Node?
+  @xml : XML::Node?
 
   def initialize(@message : String, @received_at = Time.utc)
   end
 
   def crashed? : Bool
-    twiml.xpath_float("count(//HTML)") > 0
+    xml.xpath_float("count(//HTML)") > 0
   end
 
-  def gather? : Gather?
-    if node = twiml.xpath_node("//Gather")
-      Gather.new(node)
+  def get_digits? : GetDigits?
+    if node = xml.xpath_node("//GetDigits")
+      GetDigits.new(node)
     end
   end
 
   def play? : String?
-    twiml.xpath_string("string(//Play[text()])").presence
+    xml.xpath_string("string(//Play[text()])").presence
   end
 
   def say? : String?
-    twiml.xpath_string("string(//Say[text()])").presence
-  end
-
-  def redirect? : String?
-    twiml.xpath_string("string(//Redirect[text()])").presence
+    xml.xpath_string("string(//Say[text()])").presence
   end
 
   def hangup? : Bool
-    twiml.xpath_float("count(//Hangup)") > 0
+    xml.xpath_float("count(//Say[text()='.'])") > 0
   end
 
-  private def twiml : XML::Node
-    @twiml ||= XML.parse(@message)
+  private def xml : XML::Node
+    @xml ||= XML.parse(@message)
   end
 
   def inspect(io : IO) : Nil

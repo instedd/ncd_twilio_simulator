@@ -23,8 +23,8 @@ class Twiliosim::App
     when %r{/Accounts/(.+?)/IncomingPhoneNumbers\.json}
       Twiliosim::IncomingPhoneNumbersController.handle_request($1, context)
 
-    when %r(/Accounts/(.+)/Calls.*)
-      Twiliosim::CallController.handle_request(context, $1)
+    when %r(/call.*)
+      Twiliosim::CallController.handle_request(context)
 
     else
       context.response.status = :not_found
