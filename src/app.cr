@@ -19,13 +19,10 @@ class Twiliosim::App
     case context.request.path
     when %r{/Accounts/(.+?)/IncomingPhoneNumbers/(.+?)\.json}
       Twiliosim::IncomingPhoneNumberController.handle_request($1, $2, context)
-
     when %r{/Accounts/(.+?)/IncomingPhoneNumbers\.json}
       Twiliosim::IncomingPhoneNumbersController.handle_request($1, context)
-
     when %r(/Accounts/(.+)/Calls.*)
       Twiliosim::CallController.handle_request(context, $1)
-
     else
       context.response.status = :not_found
       context.response << "404 NOT FOUND"

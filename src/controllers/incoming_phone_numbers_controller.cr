@@ -6,9 +6,9 @@ module Twiliosim::IncomingPhoneNumbersController
       "incoming_phone_numbers" => [
         {
           "accountSid" => account_sid,
-          "sid" => "PN#{Random::DEFAULT.hex(4)}",
-        }
-      ]
+          "sid"        => "PN#{Random::DEFAULT.hex(4)}",
+        },
+      ],
     }
     response.to_json(context.response)
   end

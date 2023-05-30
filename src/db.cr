@@ -6,7 +6,7 @@ class DB
   include JSON::Serializable
 
   FILENAME = "#{__DIR__}/../db.json"
-  Log = ::Log.for("twilio.simu")
+  Log      = ::Log.for("twilio.simu")
 
   @calls : Hash(String, Twiliosim::Call)
 
@@ -17,7 +17,7 @@ class DB
     # if File.exists?(FILENAME)
     #   from_json(File.read(FILENAME)).tap(&.resume_calls)
     # else
-      new
+    new
     # end
   end
 
