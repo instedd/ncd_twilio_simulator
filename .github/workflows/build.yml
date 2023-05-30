@@ -49,7 +49,7 @@ jobs:
       - name: Build image & push to Docker Hub
         env:
           DOCKER_REGISTRY: ghcr.io
-          DOCKER_REPOSITORY: ghcr.io/manastech/ncd_twilio_simulator
+          DOCKER_REPOSITORY: ghcr.io/instedd/ncd_twilio_simulator
           DOCKER_USER: ${{ github.actor }}
           DOCKER_PASS: ${{ secrets.GITHUB_TOKEN }}
         run: ./build.sh
