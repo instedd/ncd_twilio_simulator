@@ -8,6 +8,6 @@ targets:
   twiliosim:
     main: src/twiliosim.cr
 
-crystal: 0.35.1
+crystal: 1.7.0
 
 license: MIT

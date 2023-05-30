@@ -10,6 +10,8 @@ services:
     volumes:
       - .:/app
     working_dir: /app
+    environment:
+      LOG_LEVEL: trace
   ngrok:
     image: wernight/ngrok
     ports:
