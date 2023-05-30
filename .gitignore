@@ -1,1 +1,3 @@
+/bin/twiliosim
 /db.json
+/docker-compose.override.yml
