@@ -4,7 +4,7 @@ module Twiliosim::IncomingPhoneNumberController
     context.response.content_type = "application/json"
     response = {
       "accountSid" => account_sid,
-      "sid" => sid,
+      "sid"        => sid,
     }
     response.to_json(context.response)
   end

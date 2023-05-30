@@ -4,15 +4,15 @@ class Twiliosim::Verboice
 
   def post(url : String, digits : Int32 | String | Nil = nil) : String
     params = {
-      "CallSid" => @call.id,
+      "CallSid"    => @call.id,
       "AccountSid" => @call.account_sid,
-      "From" => @call.from,
-      "To" => @call.to,
+      "From"       => @call.from,
+      "To"         => @call.to,
       "CallStatus" => @call.status,
     }
     params["Digits"] = digits.to_s if digits
     request_body = HTTP::Params.encode(params)
-    headers = HTTP::Headers{ "content-type" => "application/x-www-urlencoded" }
+    headers = HTTP::Headers{"content-type" => "application/x-www-urlencoded"}
 
     Log.trace { "POST url: #{url} request: #{request_body} ..." }
     @call << ATMessage.new(url, @call.status, digits)
