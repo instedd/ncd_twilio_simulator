@@ -5,7 +5,7 @@ require "./models/call"
 class DB
   include JSON::Serializable
 
-  FILENAME = "#{__DIR__}/../db.json"
+  FILENAME = ENV.fetch("DB_FILE", "#{__DIR__}/../db.json")
   Log      = ::Log.for("twilio.simu")
 
   @calls : Hash(String, Twiliosim::Call)
