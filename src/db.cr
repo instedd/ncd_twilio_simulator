@@ -6,6 +6,7 @@ class DB
   include JSON::Serializable
 
   FILENAME = ENV.fetch("DB_FILE", "#{__DIR__}/../db.json")
+  PERSIST  = ENV.fetch("PERSIST", "true") == "true"
   Log      = ::Log.for("twilio.simu")
 
   @calls : Hash(String, Twiliosim::Call)
@@ -71,6 +72,6 @@ class DB
   end
 
   private def save : Nil
-    File.write(FILENAME, to_pretty_json)
+    File.write(FILENAME, to_pretty_json) if PERSIST
   end
 end
