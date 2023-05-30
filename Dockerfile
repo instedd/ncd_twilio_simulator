@@ -1,7 +1,7 @@
 # BUILD IMAGE
 FROM crystallang/crystal:1.7-alpine AS build
 COPY . /src
-RUN cd /src && shards build
+RUN cd /src && shards build --release
 
 # RELEASE IMAGE
 FROM alpine:3.16
