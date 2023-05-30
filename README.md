@@ -87,7 +87,7 @@ Every Surveda text-to-speech (TTS) question is translated by Verboice to a TTS m
 
 If none of these rules apply, the message is ignored.
 
-For creating questionnaire steps tese rules should be in the SMS message, make usre the responses are configure accordingly
+For creating questionnaire steps these rules should be in the SMS message, make sure the responses are configured accordingly.
 
 
 The following environment variables controls other aspects of the behavior:
